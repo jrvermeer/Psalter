@@ -38,7 +38,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements MediaService.IMediaCallbacks, PsalterDb.IDatabaseCopyComplete {
+public class MainActivity extends AppCompatActivity implements MediaService.IMediaCallbacks {
     private MediaService.MediaBinder service;
     private boolean serviceConnected = false;
     private SharedPreferences sPref;
@@ -285,9 +285,4 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             if(serviceConnected) service.stopMedia();
         }
     };
-
-    @Override
-    public void databaseCopyComplete() {
-        viewPager.getAdapter().notifyDataSetChanged();
-    }
 }

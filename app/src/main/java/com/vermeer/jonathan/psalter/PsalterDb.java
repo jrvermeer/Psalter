@@ -28,42 +28,10 @@ public class PsalterDb extends SQLiteAssetHelper {
     private static final String DATABASE_NAME = "psalter.sqlite";
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
-    private IDatabaseCopyComplete iDatabaseCopyComplete;
 
     public PsalterDb(final Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        iDatabaseCopyComplete = (IDatabaseCopyComplete)context;
-        if(!context.getDatabasePath(DATABASE_NAME).exists()){
-            new AsyncTask<Void, Void, Void>(){
-                public ProgressDialog _progress;
-                SQLiteDatabase _sqlDb;
-                @Override
-                protected void onPreExecute() {
-                    super.onPreExecute();
-                    _progress = new ProgressDialog(context);
-                    _progress.setMessage("Loading Psalter...");
-                    _progress.show();
-                }
-
-                @Override
-                protected Void doInBackground(Void... voids) {
-                    _sqlDb = PsalterDb.this.getReadableDatabase();
-                    return null;
-                }
-
-                @Override
-                protected void onPostExecute(Void aVoid) {
-                    super.onPostExecute(aVoid);
-                    _progress.dismiss();
-                    db = _sqlDb;
-                    iDatabaseCopyComplete.databaseCopyComplete();
-                }
-
-            }.execute();
-        }
-        else {
-            db = getReadableDatabase();
-        }
+        db = getReadableDatabase();
     }
 
 
@@ -97,31 +65,11 @@ public class PsalterDb extends SQLiteAssetHelper {
         }
     }
 
-//    public byte[] getTune(int number){
-//        SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
-//
-//        String[] columns = {"tune"};
-//        String where = "_id = " + number;
-//        qb.setTables(TABLE_NAME);
-//        Cursor c = qb.query(db, columns, where, null, null, null, null);
-//        if(c.moveToNext()){
-//            try{
-//                return c.getBlob(0);
-//            } catch (IllegalStateException ex){
-//                Log.e("MainActivity", "audio too large to retrieve from database for #" + number);
-//                return null;
-//            }
-//
-//        }
-//        else return null;
-//    }
-
     public Psalter[] searchPsalter(String searchText){
         try{
             ArrayList<Psalter> hits = new ArrayList<>();
             String lyrics = LyricsReplacePunctuation();
             Cursor c = db.rawQuery("select _id, psalm, " + lyrics + " from psalter where " + lyrics + " like '%" + searchText + "%'", null);
-            //Cursor c = db.rawQuery("select _id, psalm, lyrics from psalter where lyrics like '%" + searchText + "%'", null);
             while(c.moveToNext()){
                 Psalter p = new Psalter();
                 p.setNumber(c.getInt(0));
@@ -130,8 +78,7 @@ public class PsalterDb extends SQLiteAssetHelper {
 
                 hits.add(p);
             }
-            Psalter[] rtn = new Psalter[hits.size()];
-            return hits.toArray(rtn);
+            return hits.toArray(new Psalter[hits.size()]);
         } catch (Exception ex){
             return null;
         }
@@ -139,7 +86,6 @@ public class PsalterDb extends SQLiteAssetHelper {
 
     public String LyricsReplacePunctuation(){
         String replace = "lyrics";
-        ArrayList<String> replacements = new ArrayList<>();
         Collections.addAll(Arrays.asList(PsalterSearchAdapter.searchIgnoreChars));
         for(char replaceChar : PsalterSearchAdapter.searchIgnoreChars){
             replace = "replace(" + replace + ", char(" + (int)replaceChar + "), '')";
@@ -159,14 +105,9 @@ public class PsalterDb extends SQLiteAssetHelper {
 
                 hits.add(p);
             }
-            //Psalter[] rtn = new Psalter[hits.size()];
             return hits.toArray(new Psalter[hits.size()]);
         } catch (Exception ex){
             return null;
         }
-    }
-
-    public interface IDatabaseCopyComplete {
-        void databaseCopyComplete();
     }
 }
