@@ -20,6 +20,7 @@ import android.widget.Toast;
  * Created by Jonathan on 4/4/2017.
  */
 
+//uses data from PsalterDb class to fill search "screen" with items
 public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
     private String query;
     private PsalterDb db;
@@ -30,7 +31,7 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
         db = psalterDb;
     }
 
-    public String getFilteredQuery(String rawQuery){
+    private String getFilteredQuery(String rawQuery){
         String filteredQuery = rawQuery;
         for(char c : searchIgnoreChars){
             filteredQuery = filteredQuery.replace(String.valueOf(c), "");
@@ -38,7 +39,7 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
         return filteredQuery;
     }
 
-    public void updateItems(String searchQuery){
+    public void queryPsalter(String searchQuery){
         query = getFilteredQuery(searchQuery.toLowerCase());
         String[] arrQuery = query.split(" ");
         if(arrQuery.length == 2 && arrQuery[0].toLowerCase().equals("psalm")){
@@ -102,11 +103,13 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
         }
     }
 
+    //given random index in lyrics string, return index of the beginning of that verse
     private int getStartIndex(String lyrics, int queryStartIndex){
         int startIndex = lyrics.lastIndexOf("\n\n", queryStartIndex);
         if(startIndex < 0) return 0;
-        else return startIndex + 2;
+        else return startIndex + 2; // don't need to display the 2 newline chars
     }
+    //given random index in lyrics string, return index of the end of that verse
     private int getEndIndex(String lyrics, int queryStartIndex){
         int i = lyrics.indexOf("\n\n", queryStartIndex);
         if(i > 0) return i;

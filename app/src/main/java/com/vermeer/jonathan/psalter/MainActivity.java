@@ -1,17 +1,11 @@
 package com.vermeer.jonathan.psalter;
 
-import android.app.ProgressDialog;
-import android.app.SearchManager;
-import android.app.SearchableInfo;
 import android.app.Service;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.media.MediaPlayer;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
@@ -25,15 +19,12 @@ import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -161,7 +152,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     private void stringSearch(String query){
         llSearchResults.setVisibility(View.VISIBLE);
         viewPager.setVisibility(View.GONE);
-        ((PsalterSearchAdapter)lvSearchResults.getAdapter()).updateItems(query);
+        ((PsalterSearchAdapter)lvSearchResults.getAdapter()).queryPsalter(query);
     }
 
     private void goToPsalter(int psalterNumber){
