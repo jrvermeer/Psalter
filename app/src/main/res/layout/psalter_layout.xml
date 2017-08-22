@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView android:layout_height="match_parent" android:layout_width="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:orientation="vertical" android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingBottom="90dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/tvPagerPsalm"
+                    android:gravity="center_horizontal"
+                    android:paddingBottom="4dp"
+                    android:textSize="18dp"/>
+
+                <TextView
+                    android:id="@+id/tvPagerLyrics"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:layout_below="@id/tvPagerPsalm"
+                    android:textSize="16dp"/>
+
+
+        </LinearLayout>
+</ScrollView>

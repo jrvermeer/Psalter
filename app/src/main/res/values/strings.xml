@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">The Psalter</string>
+    <string name="pref_nightmode_key">pref_night</string>
+    <string name="action_nightmode">Night Mode</string>
+    <string name="action_random">Random</string>
+    <string name="action_goto_psalm">Go to Psalm</string>
+    <string name="action_search">Search</string>
+    <string name="search_hint">e.g. 427</string>
+    <string name="title_activity_search">SearchActivity</string>
+
+    <string-array name="search_hints">
+        <item>e.g. 367</item>
+        <item>e.g. Let us sing psalms</item>
+        <item>e.g. The Lord\'s my Shepherd</item>
+        <item>e.g. Psalm 23</item>
+        <item>e.g. 27</item>
+        <item>e.g. Psalm 119</item>
+        <item>e.g. O Sing ye Hallelujah</item>
+        <item>e.g. 89</item>
+    </string-array>
+</resources>
