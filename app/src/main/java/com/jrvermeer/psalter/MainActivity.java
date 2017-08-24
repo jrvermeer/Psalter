@@ -58,19 +58,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         llSearchResults = (LinearLayout) findViewById(R.id.llSearchResults);
         lvSearchResults = (ListView)findViewById(R.id.lvSearchResults);
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, db));
-        lvSearchResults.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                try{
-                    TextView tvNumber = (TextView)view.findViewById(R.id.tvSearchNumber);
-                    int num = Integer.parseInt((String)tvNumber.getText());
-                    goToPsalter(num);
-
-                } catch (Exception ex){
-                    Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        lvSearchResults.setOnItemClickListener(searchItemClickListener);
 
         //set up toolbar
         Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
@@ -278,6 +266,19 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         @Override
         public void onPageSelected(int position) {
             if(serviceConnected) service.stopMedia();
+        }
+    };
+    private AdapterView.OnItemClickListener searchItemClickListener = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            try {
+                TextView tvNumber = (TextView) view.findViewById(R.id.tvSearchNumber);
+                int num = Integer.parseInt((String) tvNumber.getText());
+                goToPsalter(num);
+
+            } catch (Exception ex) {
+                Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         }
     };
 }
