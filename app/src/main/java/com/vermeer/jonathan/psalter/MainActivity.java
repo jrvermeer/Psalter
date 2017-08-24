@@ -125,9 +125,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                     stringSearch(query);
                     return true;
                 }
-                finally{
-                    searchMenuItem.collapseActionView();
-                }
             }
 
             @Override
@@ -214,6 +211,8 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                 @Override
                 public boolean onMenuItemActionCollapse(MenuItem item) {
                     timer.cancel();
+                    llSearchResults.setVisibility(View.GONE);
+                    viewPager.setVisibility(View.VISIBLE);
                     return true;
                 }
             });
