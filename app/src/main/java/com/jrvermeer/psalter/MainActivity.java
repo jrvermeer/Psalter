@@ -30,7 +30,6 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements MediaService.IMediaCallbacks {
     private MediaService.MediaBinder service;
-    private boolean serviceConnected = false;
     private SharedPreferences sPref;
     private ViewPager viewPager;
     private FloatingActionButton fab;
@@ -92,7 +91,8 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(serviceConnected && isFinishing()){
+        if(service != null && isFinishing()){
+            service.stopMedia();
             getApplicationContext().unbindService(mConnection);
         }
     }
@@ -146,10 +146,10 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     private void goToPsalter(int psalterNumber){
+        searchMenuItem.collapseActionView();
         llSearchResults.setVisibility(View.GONE);
         viewPager.setVisibility(View.VISIBLE);
         viewPager.setCurrentItem(psalterNumber - 1, true); //viewpager goes by index
-        searchMenuItem.collapseActionView();
     }
 
     @Override
@@ -224,29 +224,24 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             service = (MediaService.MediaBinder) iBinder;
             service.setCallbacks(MainActivity.this);
-            serviceConnected = true;
             if(service.isPlaying()){
                 fab.setImageResource(R.drawable.ic_stop_white_24dp);
             }
         }
 
         @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            serviceConnected = false;
-        }
+        public void onServiceDisconnected(ComponentName componentName) { }
     };
 
     private View.OnClickListener fabListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            if(!serviceConnected){
-                Toast.makeText(MainActivity.this, "Media Service not connected", Toast.LENGTH_SHORT).show();
-            }
-            else if(service.isPlaying()){
+            if(service == null) return;
+
+            if(service.isPlaying()){
                 service.stopMedia();
             }
             else {
-                //byte[] tune = ((PsalterPagerAdapter)viewPager.getAdapter()).getTune(viewPager.getCurrentItem());
                 int psalterNumber = viewPager.getCurrentItem() + 1; // 0 based index
                 if(service.playMedia(psalterNumber)) {
                     fab.setImageResource(R.drawable.ic_stop_white_24dp);
@@ -265,7 +260,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         public void onPageScrollStateChanged(int state) {}
         @Override
         public void onPageSelected(int position) {
-            if(serviceConnected) service.stopMedia();
+            if(service != null) service.stopMedia();
         }
     };
     private AdapterView.OnItemClickListener searchItemClickListener = new AdapterView.OnItemClickListener() {
