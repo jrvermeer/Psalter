@@ -1,4 +1,4 @@
-package com.vermeer.jonathan.psalter;
+package com.jrvermeer.psalter;
 
 import android.app.Service;
 import android.content.ComponentName;
@@ -15,7 +15,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -93,7 +92,14 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         getApplicationContext().bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
     }
 
-
+    @Override
+    public void onBackPressed(){
+        if(llSearchResults.getVisibility() == View.VISIBLE){
+            llSearchResults.setVisibility(View.GONE);
+            viewPager.setVisibility(View.VISIBLE);
+        }
+        else super.onBackPressed();
+    }
 
     @Override
     protected void onDestroy() {
@@ -113,7 +119,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         }
         searchMenuItem = menu.findItem(R.id.action_search);
         final SearchView searchView = (SearchView)searchMenuItem.getActionView();
-        searchView.setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -124,9 +129,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                 } catch (NumberFormatException ex){
                     stringSearch(query);
                     return true;
-                }
-                finally{
-                    searchMenuItem.collapseActionView();
                 }
             }
 
@@ -207,13 +209,15 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                             });
                         }
                     };
-                    timer.schedule(task, 0, 3000);
+                    timer.schedule(task, 0, 2000);
                     return true;
                 }
 
                 @Override
                 public boolean onMenuItemActionCollapse(MenuItem item) {
                     timer.cancel();
+                    llSearchResults.setVisibility(View.GONE);
+                    viewPager.setVisibility(View.VISIBLE);
                     return true;
                 }
             });

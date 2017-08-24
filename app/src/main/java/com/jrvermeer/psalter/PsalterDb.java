@@ -1,22 +1,15 @@
-package com.vermeer.jonathan.psalter;
+package com.jrvermeer.psalter;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteQuery;
 import android.database.sqlite.SQLiteQueryBuilder;
-import android.os.AsyncTask;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 
 /**

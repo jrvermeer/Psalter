@@ -1,4 +1,4 @@
-package com.vermeer.jonathan.psalter;
+package com.jrvermeer.psalter;
 
 /**
  * Created by Jonathan on 3/27/2017.

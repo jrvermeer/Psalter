@@ -1,4 +1,4 @@
-package com.vermeer.jonathan.psalter;
+package com.jrvermeer.psalter;
 
 import android.content.Context;
 import android.support.v4.view.PagerAdapter;
