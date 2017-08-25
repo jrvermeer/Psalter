@@ -32,7 +32,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
             ViewGroup layout = (ViewGroup)inflater.inflate(R.layout.psalter_layout, collection, false);
 
             ((TextView)layout.findViewById(R.id.tvPagerLyrics)).setText(psalter.getLyrics());
-            String subtitle = null;
+            String subtitle;
             if(psalter.getPsalm() != 0){
                 subtitle = "Psalm " + psalter.getPsalm();
             }
@@ -54,8 +54,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
 
     @Override
     public int getCount() {
-        int count = db.getCount();
-        return count;
+        return db.getCount();
     }
 
     @Override
@@ -72,10 +71,6 @@ public class PsalterPagerAdapter extends PagerAdapter {
     public Psalter getPsalter(int pagerIndex){
         return db.getPsalter(pagerIndex + 1);
     }
-
-//    public byte[] getTune(int pagerIndex) {
-//        return db.getTune(pagerIndex + 1);
-//    }
 
     @Override
     public boolean isViewFromObject(View view, Object object) {

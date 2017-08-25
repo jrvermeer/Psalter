@@ -30,33 +30,28 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
         db = psalterDb;
     }
 
-    private String getFilteredQuery(String rawQuery){
-        String filteredQuery = rawQuery;
-        for(char c : searchIgnoreChars){
-            filteredQuery = filteredQuery.replace(String.valueOf(c), "");
-        }
-        return filteredQuery;
-    }
-
     public void queryPsalter(String searchQuery){
         query = getFilteredQuery(searchQuery.toLowerCase());
+        psalmSearch = false;
         String[] arrQuery = query.split(" ");
+        // if it's a psalm search
         if(arrQuery.length == 2 && arrQuery[0].toLowerCase().equals("psalm")){
             try{
-                int psalm = Integer.parseInt(query.split(" ")[1]);
-                Psalter[] results = db.getPsalm(psalm);
-                clear();
-                addAll(results);
+                int psalm = Integer.parseInt(arrQuery[1]);
+                showResults(db.getPsalm(psalm));
                 psalmSearch = true;
-                return;
             }
-            catch (NumberFormatException ex){ }
+            catch (NumberFormatException ex){
+                showResults(db.searchPsalter(query));
+            }
         }
-
-        Psalter[] results = db.searchPsalter(query);
+        else {
+            showResults(db.searchPsalter(query));
+        }
+    }
+    private void showResults(Psalter[] results){
         clear();
         addAll(results);
-        psalmSearch = false;
     }
 
     @NonNull
@@ -101,7 +96,14 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
             return  convertView;
         }
     }
-
+    //filter out characters
+    private String getFilteredQuery(String rawQuery){
+        String filteredQuery = rawQuery;
+        for(char c : searchIgnoreChars){
+            filteredQuery = filteredQuery.replace(String.valueOf(c), "");
+        }
+        return filteredQuery;
+    }
     //given random index in lyrics string, return index of the beginning of that verse
     private int getStartIndex(String lyrics, int queryStartIndex){
         int startIndex = lyrics.lastIndexOf("\n\n", queryStartIndex);
