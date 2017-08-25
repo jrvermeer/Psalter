@@ -15,7 +15,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -83,8 +82,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     @Override
     public void onBackPressed(){
         if(llSearchResults.getVisibility() == View.VISIBLE){
-            llSearchResults.setVisibility(View.GONE);
-            viewPager.setVisibility(View.VISIBLE);
+            hideSearchResultsScreen();
         }
         else super.onBackPressed();
     }
@@ -141,27 +139,35 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     private void stringSearch(String query){
-        llSearchResults.setVisibility(View.VISIBLE);
-        viewPager.setVisibility(View.GONE);
+        showSearchResultsScreen();
         ((PsalterSearchAdapter)lvSearchResults.getAdapter()).queryPsalter(query);
     }
 
     private void goToPsalter(int psalterNumber){
         searchMenuItem.collapseActionView();
-        llSearchResults.setVisibility(View.GONE);
-        viewPager.setVisibility(View.VISIBLE);
+        hideSearchResultsScreen();
         viewPager.setCurrentItem(psalterNumber - 1, true); //viewpager goes by index
     }
+    private void showSearchResultsScreen(){
+        llSearchResults.setVisibility(View.VISIBLE);
+        viewPager.setVisibility(View.GONE);
+        fab.setVisibility(View.GONE);
+    }
+    private void hideSearchResultsScreen(){
+        llSearchResults.setVisibility(View.GONE);
+        viewPager.setVisibility(View.VISIBLE);
+        fab.setVisibility(View.VISIBLE);
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if(id == R.id.action_nightmode){
-            boolean nightmode = !item.isChecked();
+            boolean nightmode = !item.isChecked(); //checked property must be updated manually, so here it's the opposite of what it says, since user just clicked it.
             sPref.edit().putBoolean(getResources().getString(R.string.pref_nightmode_key), nightmode).commit();
             item.setChecked(nightmode);
             recreate();
-            return true;
         }
         else if(id == R.id.action_random){
             int number = rand.nextInt(viewPager.getAdapter().getCount());
@@ -205,16 +211,17 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                 @Override
                 public boolean onMenuItemActionCollapse(MenuItem item) {
                     timer.cancel();
-                    llSearchResults.setVisibility(View.GONE);
-                    viewPager.setVisibility(View.VISIBLE);
+                    hideSearchResultsScreen();
                     return true;
                 }
             });
         }
+        else return false;
 
-        return false;
+        return true;
     }
 
+    //MediaCallbacks Interface
     @Override
     public void playerFinished() {
         fab.setImageResource(R.drawable.ic_play_arrow_white_24dp);
