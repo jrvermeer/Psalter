@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     private SharedPreferences sPref;
     private ViewPager viewPager;
     private FloatingActionButton fab;
-    private Random rand;
+    private Random rand = new Random();
     private LinearLayout llSearchResults;
     private ListView lvSearchResults;
     private MenuItem searchMenuItem;
@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //set up theme (must do this before calling setContentView())
+        // initialize theme (must do this before calling setContentView())
         sPref = getSharedPreferences("settings", MODE_PRIVATE);
         boolean nightMode = sPref.getBoolean(getResources().getString(R.string.pref_nightmode_key), false);
         if(nightMode){
@@ -51,30 +51,29 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         else setTheme(R.style.AppTheme_Light);
         setContentView(R.layout.activity_main);
 
+        // initialize search results
         PsalterDb db = new PsalterDb(this);
-
-        rand = new Random();
         llSearchResults = (LinearLayout) findViewById(R.id.llSearchResults);
         lvSearchResults = (ListView)findViewById(R.id.lvSearchResults);
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, db));
         lvSearchResults.setOnItemClickListener(searchItemClickListener);
 
-        //set up toolbar
+        // initialize toolbar
         Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        //set up pager
+        // initialize main psalter viewpager
         viewPager = (ViewPager)findViewById(R.id.viewpager);
         final PsalterPagerAdapter adapter = new PsalterPagerAdapter(this, db);
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(5);
         viewPager.addOnPageChangeListener(pageChangeListener);
 
-        //set up fab
+        // initialize fab
         fab = ((FloatingActionButton)findViewById(R.id.fab));
         fab.setOnClickListener(fabListener);
 
-        //set up service
+        // initialize media service
         Intent intent = new Intent(this, MediaService.class);
         getApplicationContext().bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
     }
@@ -164,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if(id == R.id.action_nightmode){
-            boolean nightmode = !item.isChecked(); //checked property must be updated manually, so here it's the opposite of what it says, since user just clicked it.
+            boolean nightmode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
             sPref.edit().putBoolean(getResources().getString(R.string.pref_nightmode_key), nightmode).commit();
             item.setChecked(nightmode);
             recreate();
