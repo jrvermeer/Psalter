@@ -116,6 +116,9 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                     stringSearch(query);
                     return true;
                 }
+                finally {
+                    searchView.clearFocus();
+                }
             }
 
             @Override
