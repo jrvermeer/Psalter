@@ -2,9 +2,11 @@ package com.jrvermeer.psalter;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 /**
@@ -12,40 +14,32 @@ import android.support.annotation.Nullable;
  */
 
 public class MediaService extends Service {
-    MediaBinder mediaBinder;
-    MediaPlayer mediaPlayer;
-    IMediaCallbacks mediaCallbacks;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        mediaBinder = new MediaBinder();
-    }
-
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return mediaBinder;
+        return new MediaBinder();
     }
 
-    public class MediaBinder extends Binder{
-        public void setCallbacks(IMediaCallbacks callbacks){
+    public class MediaBinder extends Binder implements MediaPlayer.OnCompletionListener {
+        public MediaBinder(){
+            mediaPlayer = new MediaPlayer();
+        }
+        private MediaPlayer mediaPlayer;
+        private IMediaCallbacks mediaCallbacks;
+        public void setCallbacks(@NonNull final IMediaCallbacks callbacks){
             mediaCallbacks = callbacks;
+            mediaPlayer.setOnCompletionListener(this);
         }
 
         public boolean playMedia(int psalterNumber){
             try{
-                int resID = getResources().getIdentifier("_" + psalterNumber, "raw", getPackageName());
                 stopMedia();
-                mediaPlayer = MediaPlayer.create(getApplicationContext(), resID);
-                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                                                        @Override
-                                                        public void onCompletion(MediaPlayer mediaPlayer) {
-                                                            if (mediaCallbacks != null) {
-                                                                mediaCallbacks.playerFinished();
-                                                            }
-                                                        }
-                                                    });
+
+                int resID = getResources().getIdentifier("_" + psalterNumber, "raw", getPackageName());
+                AssetFileDescriptor afd = getApplicationContext().getResources().openRawResourceFd(resID);
+                mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                afd.close();
+                mediaPlayer.prepare();
                 mediaPlayer.start();
                 return true;
             } catch (Exception ex){
@@ -56,14 +50,20 @@ public class MediaService extends Service {
         public void stopMedia(){
             if(isPlaying()){
                 mediaPlayer.stop();
-                if(mediaCallbacks != null){
-                    mediaCallbacks.playerFinished();
-                }
+                onCompletion(mediaPlayer);
             }
         }
 
         public boolean isPlaying(){
             return mediaPlayer != null && mediaPlayer.isPlaying();
+        }
+
+        @Override
+        public void onCompletion(MediaPlayer mediaPlayer) {
+            mediaPlayer.reset();
+            if(mediaCallbacks != null){
+                mediaCallbacks.playerFinished();
+            }
         }
     }
 
