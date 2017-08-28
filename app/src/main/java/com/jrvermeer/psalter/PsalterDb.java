@@ -38,13 +38,14 @@ public class PsalterDb extends SQLiteAssetHelper {
     }
 
     public Psalter getPsalter(int number){
+        Cursor c = null;
         try{
             SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
 
             String[] columns = {"_id", "psalm", "lyrics"};
             String where = "_id = " + number;
             qb.setTables(TABLE_NAME);
-            Cursor c = qb.query(db, columns, where, null, null, null, null);
+            c = qb.query(db, columns, where, null, null, null, null);
             if(c.moveToNext()){
                 Psalter p = new Psalter();
                 p.setNumber(c.getInt(0));
@@ -57,13 +58,17 @@ public class PsalterDb extends SQLiteAssetHelper {
         } catch (Exception ex){
             return null;
         }
+        finally {
+            if(c != null) c.close();
+        }
     }
 
     public Psalter[] searchPsalter(String searchText){
+        Cursor c = null;
         try{
             ArrayList<Psalter> hits = new ArrayList<>();
             String lyrics = LyricsReplacePunctuation();
-            Cursor c = db.rawQuery("select _id, psalm, " + lyrics + " from psalter where " + lyrics + " like '%" + searchText + "%'", null);
+            c = db.rawQuery("select _id, psalm, " + lyrics + " from psalter where " + lyrics + " like '%" + searchText + "%'", null);
             while(c.moveToNext()){
                 Psalter p = new Psalter();
                 p.setNumber(c.getInt(0));
@@ -75,6 +80,9 @@ public class PsalterDb extends SQLiteAssetHelper {
             return hits.toArray(new Psalter[hits.size()]);
         } catch (Exception ex){
             return null;
+        }
+        finally {
+            if(c != null) c.close();
         }
     }
 
@@ -88,9 +96,10 @@ public class PsalterDb extends SQLiteAssetHelper {
     }
 
     public Psalter[] getPsalm(int psalmNumber){
+        Cursor c = null;
         try{
             ArrayList<Psalter> hits = new ArrayList<>();
-            Cursor c = db.rawQuery("select _id, psalm, lyrics from psalter where psalm = " + String.valueOf(psalmNumber), null);
+            c = db.rawQuery("select _id, psalm, lyrics from psalter where psalm = " + String.valueOf(psalmNumber), null);
             while(c.moveToNext()){
                 Psalter p = new Psalter();
                 p.setNumber(c.getInt(0));
@@ -102,6 +111,9 @@ public class PsalterDb extends SQLiteAssetHelper {
             return hits.toArray(new Psalter[hits.size()]);
         } catch (Exception ex){
             return null;
+        }
+        finally {
+            if(c != null) c.close();
         }
     }
 }
