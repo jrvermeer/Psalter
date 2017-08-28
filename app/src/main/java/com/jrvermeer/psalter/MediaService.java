@@ -21,7 +21,7 @@ public class MediaService extends Service {
     }
 
     public class MediaBinder extends Binder implements MediaPlayer.OnCompletionListener {
-        public MediaBinder(){
+        private MediaBinder(){
             mediaPlayer = new MediaPlayer();
         }
         private MediaPlayer mediaPlayer;
