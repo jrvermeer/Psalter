@@ -89,13 +89,24 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        saveState();
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
     protected void onDestroy() {
-        super.onDestroy();
-        sPref.edit().putInt(getResources().getString(R.string.key_lastindex), viewPager.getCurrentItem()).apply();
+        // save current page when using back button to close application, since onSaveInstanceState is not called
+        saveState();
         if(service != null && isFinishing()){
             service.stopMedia();
             getApplicationContext().unbindService(mConnection);
         }
+        super.onDestroy();
+    }
+
+    private void saveState(){
+        sPref.edit().putInt(getResources().getString(R.string.key_lastindex), viewPager.getCurrentItem()).commit();
     }
 
     @Override
