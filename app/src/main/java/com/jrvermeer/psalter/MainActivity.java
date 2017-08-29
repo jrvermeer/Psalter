@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
         // initialize theme (must do this before calling setContentView())
         sPref = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean nightMode = sPref.getBoolean(getResources().getString(R.string.pref_nightmode_key), false);
+        boolean nightMode = sPref.getBoolean(getResources().getString(R.string.key_nightmode), false);
         if(nightMode){
             setTheme(R.style.AppTheme_Dark);
         }
@@ -68,6 +68,8 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(5);
         viewPager.addOnPageChangeListener(pageChangeListener);
+        int pagerIndex = sPref.getInt(getResources().getString(R.string.key_lastindex), 0);
+        viewPager.setCurrentItem(pagerIndex);
 
         // initialize fab
         fab = ((FloatingActionButton)findViewById(R.id.fab));
@@ -89,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        sPref.edit().putInt(getResources().getString(R.string.key_lastindex), viewPager.getCurrentItem()).apply();
         if(service != null && isFinishing()){
             service.stopMedia();
             getApplicationContext().unbindService(mConnection);
@@ -99,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     public boolean onCreateOptionsMenu(final Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_options, menu);
-        boolean nightMode = sPref.getBoolean(getResources().getString(R.string.pref_nightmode_key), false);
+        boolean nightMode = sPref.getBoolean(getResources().getString(R.string.key_nightmode), false);
         if(nightMode){
             menu.getItem(3).setChecked(true);
         }
@@ -143,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     private void stringSearch(String query){
         showSearchResultsScreen();
         ((PsalterSearchAdapter)lvSearchResults.getAdapter()).queryPsalter(query);
+        lvSearchResults.setSelectionAfterHeaderView();
     }
 
     private void goToPsalter(int psalterNumber){
@@ -167,12 +171,12 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         int id = item.getItemId();
         if(id == R.id.action_nightmode){
             boolean nightmode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
-            sPref.edit().putBoolean(getResources().getString(R.string.pref_nightmode_key), nightmode).commit();
+            sPref.edit().putBoolean(getResources().getString(R.string.key_nightmode), nightmode).commit();
             item.setChecked(nightmode);
             recreate();
         }
         else if(id == R.id.action_random){
-            int number = rand.nextInt(viewPager.getAdapter().getCount());
+            int number = rand.nextInt(viewPager.getAdapter().getCount()); // random number between 0 and 433 (inclusive)
             viewPager.setCurrentItem(number, true);
         }
         else if(id == R.id.action_goto_psalm){

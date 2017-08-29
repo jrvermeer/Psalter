@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Psalter</string>
-    <string name="pref_nightmode_key">pref_night</string>
+    <string name="key_nightmode">key_nightmode</string>
+    <string name="key_lastindex">key_lastindex</string>
     <string name="action_nightmode">Night Mode</string>
     <string name="action_random">Random</string>
     <string name="action_goto_psalm">Go to Psalm</string>
