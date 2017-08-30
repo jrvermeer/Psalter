@@ -4,6 +4,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.Handler;
@@ -16,10 +17,26 @@ import android.support.annotation.Nullable;
  */
 
 public class MediaService extends Service {
+    private MediaBinder binder;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return new MediaBinder();
+        if(binder == null){
+            binder = new MediaBinder();
+        }
+        return binder;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if(binder != null && intent.getAction().equals(NotificationHelper.ACTION_PLAY)){
+            // if playing, stop playback
+            if(binder.isPlaying()){
+                binder.stopMedia();
+            }
+            // if not playing, start playback
+        }
+        return super.onStartCommand(intent, flags, startId);
     }
 
     public class MediaBinder extends Binder implements MediaPlayer.OnCompletionListener {
@@ -56,7 +73,7 @@ public class MediaService extends Service {
                 currentIteration = 0;
                 mediaPlayer.prepare();
                 mediaPlayer.start();
-                NotificationHelper.notify(MediaService.this);
+                NotificationHelper.notify(MediaService.this, psalter);
                 return true;
             } catch (Exception ex){
                 return false;

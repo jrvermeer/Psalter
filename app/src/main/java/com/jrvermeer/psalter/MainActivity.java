@@ -82,6 +82,11 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+    }
+
+    @Override
     public void onBackPressed(){
         if(llSearchResults.getVisibility() == View.VISIBLE){
             hideSearchResultsScreen();

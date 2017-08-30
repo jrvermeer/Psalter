@@ -32,12 +32,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
             ViewGroup layout = (ViewGroup)inflater.inflate(R.layout.psalter_layout, collection, false);
 
             ((TextView)layout.findViewById(R.id.tvPagerLyrics)).setText(psalter.getLyrics());
-            String subtitle;
-            if(psalter.getPsalm() != 0){
-                subtitle = "Psalm " + psalter.getPsalm();
-            }
-            else subtitle = "Lords Prayer";
-            ((TextView)layout.findViewById(R.id.tvPagerPsalm)).setText(subtitle);
+            ((TextView)layout.findViewById(R.id.tvPagerPsalm)).setText(psalter.getDisplaySubtitle());
             collection.addView(layout);
             return layout;
         } catch (Exception ex){
@@ -59,13 +54,12 @@ public class PsalterPagerAdapter extends PagerAdapter {
 
     @Override
     public CharSequence getPageTitle(int position) {
-            try{
-                return "#" + getPsalter(position).getNumber();
-            } catch (Exception ex){
-                return "?";
-            }
-
+        try{
+            return getPsalter(position).getDisplayTitle();
+        } catch (Exception ex){
+            return "?";
         }
+    }
 
 
     public Psalter getPsalter(int pagerIndex){

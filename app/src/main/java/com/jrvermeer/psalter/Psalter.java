@@ -11,10 +11,6 @@ public class Psalter {
     private String lyrics;
     private int numverses;
 
-
-
-
-
     public int getNumber() {
         return number;
     }
@@ -39,5 +35,15 @@ public class Psalter {
     }
     public void setNumverses(int numverses) {
         this.numverses = numverses;
+    }
+
+    public String getDisplayTitle(){
+        return "#" + number;
+    }
+
+    public String getDisplaySubtitle(){
+        if(psalm == 0){
+            return "Lords Prayer";
+        } else return "Psalm " + psalm;
     }
 }
