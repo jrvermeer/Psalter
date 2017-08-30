@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaPlayer;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -26,31 +27,44 @@ public class MediaService extends Service {
         }
         private MediaPlayer mediaPlayer;
         private IMediaCallbacks mediaCallbacks;
+
+        private Handler handler = new Handler();
+        private Runnable playNextVerse = new Runnable() {
+            @Override
+            public void run() {
+                mediaPlayer.start();
+            }
+        };
+        private int iterationDelay_ms = 1000;
+        private int numberIterationsToPlay = 1;
+        private int currentIteration = 0;
+
         public void setCallbacks(@NonNull final IMediaCallbacks callbacks){
             mediaCallbacks = callbacks;
             mediaPlayer.setOnCompletionListener(this);
         }
 
-        public boolean playMedia(int psalterNumber){
+        public boolean playMedia(Psalter psalter){
             try{
                 stopMedia();
-
-                int resID = getResources().getIdentifier("_" + psalterNumber, "raw", getPackageName());
+                int resID = getResources().getIdentifier("_" + psalter.getNumber(), "raw", getPackageName());
                 AssetFileDescriptor afd = getApplicationContext().getResources().openRawResourceFd(resID);
                 mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
                 afd.close();
+                numberIterationsToPlay = psalter.getNumverses();
+                currentIteration = 0;
                 mediaPlayer.prepare();
                 mediaPlayer.start();
                 return true;
             } catch (Exception ex){
-                return  false;
+                return false;
             }
         }
 
         public void stopMedia(){
             if(isPlaying()){
                 mediaPlayer.stop();
-                onCompletion(mediaPlayer);
+                playbackStopped();
             }
         }
 
@@ -58,8 +72,17 @@ public class MediaService extends Service {
             return mediaPlayer != null && mediaPlayer.isPlaying();
         }
 
+
         @Override
-        public void onCompletion(MediaPlayer mediaPlayer) {
+        public void onCompletion(final MediaPlayer mediaPlayer) {
+            currentIteration++;
+            if(currentIteration < numberIterationsToPlay){
+                handler.postDelayed(playNextVerse, iterationDelay_ms);
+            }
+            else playbackStopped();
+
+        }
+        private void playbackStopped(){
             mediaPlayer.reset();
             if(mediaCallbacks != null){
                 mediaCallbacks.playerFinished();

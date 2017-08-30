@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     private LinearLayout llSearchResults;
     private ListView lvSearchResults;
     private MenuItem searchMenuItem;
+    private PsalterDb db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         setContentView(R.layout.activity_main);
 
         // initialize search results
-        PsalterDb db = new PsalterDb(this);
+        db = new PsalterDb(this);
         llSearchResults = (LinearLayout) findViewById(R.id.llSearchResults);
         lvSearchResults = (ListView)findViewById(R.id.lvSearchResults);
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, db));
@@ -267,8 +268,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                 service.stopMedia();
             }
             else {
-                int psalterNumber = viewPager.getCurrentItem() + 1; // 0 based index
-                if(service.playMedia(psalterNumber)) {
+                if(service.playMedia(db.getPsalter(viewPager.getCurrentItem() + 1))) {
                     fab.setImageResource(R.drawable.ic_stop_white_24dp);
                 }
                 else{

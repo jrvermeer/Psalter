@@ -28,7 +28,6 @@ public class PsalterDb extends SQLiteAssetHelper {
         db = getReadableDatabase();
     }
 
-
     public int getCount(){
         try{
             return (int)DatabaseUtils.queryNumEntries(db, TABLE_NAME);
@@ -42,7 +41,7 @@ public class PsalterDb extends SQLiteAssetHelper {
         try{
             SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
 
-            String[] columns = {"_id", "psalm", "lyrics"};
+            String[] columns = {"_id", "psalm", "lyrics", "numverses"};
             String where = "_id = " + number;
             qb.setTables(TABLE_NAME);
             c = qb.query(db, columns, where, null, null, null, null);
@@ -51,6 +50,7 @@ public class PsalterDb extends SQLiteAssetHelper {
                 p.setNumber(c.getInt(0));
                 p.setPsalm(c.getInt(1));
                 p.setLyrics(c.getString(2));
+                p.setNumverses(c.getInt(3));
                 return p;
             } else {
                 return null;
