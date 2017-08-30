@@ -1,5 +1,6 @@
 package com.jrvermeer.psalter;
 
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
@@ -55,6 +56,7 @@ public class MediaService extends Service {
                 currentIteration = 0;
                 mediaPlayer.prepare();
                 mediaPlayer.start();
+                NotificationHelper.notify(MediaService.this);
                 return true;
             } catch (Exception ex){
                 return false;
@@ -87,6 +89,7 @@ public class MediaService extends Service {
             if(mediaCallbacks != null){
                 mediaCallbacks.playerFinished();
             }
+            NotificationHelper.clearNotification();
         }
     }
 
