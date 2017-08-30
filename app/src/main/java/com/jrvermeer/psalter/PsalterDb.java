@@ -86,7 +86,7 @@ public class PsalterDb extends SQLiteAssetHelper {
         }
     }
 
-    public String LyricsReplacePunctuation(){
+    private String LyricsReplacePunctuation(){
         String replace = "lyrics";
         Collections.addAll(Arrays.asList(PsalterSearchAdapter.searchIgnoreChars));
         for(char replaceChar : PsalterSearchAdapter.searchIgnoreChars){
