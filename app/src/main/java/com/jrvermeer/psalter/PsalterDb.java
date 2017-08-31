@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
+import android.os.Build;
 
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper;
 
@@ -67,8 +68,11 @@ public class PsalterDb extends SQLiteAssetHelper {
         Cursor c = null;
         try{
             ArrayList<Psalter> hits = new ArrayList<>();
-            String lyrics = LyricsReplacePunctuation();
-            c = db.rawQuery("select _id, psalm, " + lyrics + " from psalter where " + lyrics + " like '%" + searchText + "%'", null);
+            String lyrics = LyricsReplacePunctuation_ApiOver19();
+            if(Build.VERSION.SDK_INT == 19){
+                c = searchPsalterCursor_Api19(searchText);
+            }
+            else c = searchPsalterCursor_ApiOver19(searchText);
             while(c.moveToNext()){
                 Psalter p = new Psalter();
                 p.setNumber(c.getInt(0));
@@ -86,9 +90,18 @@ public class PsalterDb extends SQLiteAssetHelper {
         }
     }
 
-    private String LyricsReplacePunctuation(){
+    private Cursor searchPsalterCursor_Api19(String searchText){
+        return db.rawQuery("select _id, psalm, replace(lyrics, '''', '') lyrics from psalter where lyrics like '%" + searchText + "%'", null);
+    }
+
+    private Cursor searchPsalterCursor_ApiOver19(String searchText){
+        String lyrics = LyricsReplacePunctuation_ApiOver19();
+        return db.rawQuery("select _id, psalm, " + lyrics + " lyrics from psalter where lyrics like '%" + searchText + "%'", null);
+    }
+
+    private String LyricsReplacePunctuation_ApiOver19(){
         String replace = "lyrics";
-        Collections.addAll(Arrays.asList(PsalterSearchAdapter.searchIgnoreChars));
+        //Collections.addAll(Arrays.asList(PsalterSearchAdapter.searchIgnoreChars));
         for(char replaceChar : PsalterSearchAdapter.searchIgnoreChars){
             replace = "replace(" + replace + ", char(" + (int)replaceChar + "), '')";
         }
