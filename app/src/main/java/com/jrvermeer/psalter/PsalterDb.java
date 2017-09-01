@@ -18,7 +18,7 @@ import java.util.Collections;
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 public class PsalterDb extends SQLiteAssetHelper {
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
     private static final String DATABASE_NAME = "psalter.sqlite";
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;

@@ -53,7 +53,7 @@ public class MediaService extends Service {
                 mediaPlayer.start();
             }
         };
-        private int iterationDelay_ms = 1000;
+        private int iterationDelay_ms = 700;
         private int numberIterationsToPlay = 1;
         private int currentIteration = 0;
 
