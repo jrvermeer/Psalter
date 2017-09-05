@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter;
+package com.jrvermeer.psalter.Adapters;
 
 import android.content.Context;
 import android.support.v4.view.PagerAdapter;
@@ -6,6 +6,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.jrvermeer.psalter.Models.Psalter;
+import com.jrvermeer.psalter.PsalterDb;
+import com.jrvermeer.psalter.R;
 
 import java.util.HashMap;
 

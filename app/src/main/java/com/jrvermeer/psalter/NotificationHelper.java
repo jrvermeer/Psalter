@@ -4,12 +4,9 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.BitmapFactory;
-import android.os.Build;
-import android.os.Parcel;
 import android.support.v7.app.NotificationCompat;
-import android.widget.ImageButton;
-import android.widget.RemoteViews;
+
+import com.jrvermeer.psalter.Models.Psalter;
 
 /**
  * Created by jonathanv on 8/30/2017.

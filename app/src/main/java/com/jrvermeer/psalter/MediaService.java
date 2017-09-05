@@ -1,16 +1,16 @@
 package com.jrvermeer.psalter;
 
-import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
+import com.jrvermeer.psalter.Models.Psalter;
 
 /**
  * Created by Jonathan on 4/3/2017.

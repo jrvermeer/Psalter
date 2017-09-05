@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter;
+package com.jrvermeer.psalter.Adapters;
 
 import android.content.Context;
 import android.graphics.Typeface;
@@ -15,6 +15,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+
+import com.jrvermeer.psalter.Models.Psalter;
+import com.jrvermeer.psalter.PsalterDb;
+import com.jrvermeer.psalter.R;
 
 /**
  * Created by Jonathan on 4/4/2017.
@@ -100,12 +104,9 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
     //filter out characters
     private String getFilteredQuery(String rawQuery){
         String filteredQuery = rawQuery;
-        if(Build.VERSION.SDK_INT > 19) { // the version of sqlite shipped with api 19 doesnt have char() function needed to replace characters
-            for (char c : searchIgnoreChars) {
-                filteredQuery = filteredQuery.replace(String.valueOf(c), "");
-            }
+        for (char c : searchIgnoreChars) {
+            filteredQuery = filteredQuery.replace(String.valueOf(c), "");
         }
-        else filteredQuery = filteredQuery.replace("\'", "");
         return filteredQuery;
     }
     //given random index in lyrics string, return index of the beginning of that verse

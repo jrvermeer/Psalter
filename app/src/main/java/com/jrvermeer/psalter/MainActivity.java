@@ -24,6 +24,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.jrvermeer.psalter.Adapters.PsalterPagerAdapter;
+import com.jrvermeer.psalter.Adapters.PsalterSearchAdapter;
+
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
