@@ -37,7 +37,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     private ViewPager viewPager;
     private FloatingActionButton fab;
     private Random rand = new Random();
-    private LinearLayout llSearchResults;
     private ListView lvSearchResults;
     private MenuItem searchMenuItem;
     private PsalterDb db;
@@ -57,7 +56,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
         // initialize search results
         db = new PsalterDb(this);
-        llSearchResults = (LinearLayout) findViewById(R.id.llSearchResults);
         lvSearchResults = (ListView)findViewById(R.id.lvSearchResults);
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, db));
         lvSearchResults.setOnItemClickListener(searchItemClickListener);
@@ -91,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
     @Override
     public void onBackPressed(){
-        if(llSearchResults.getVisibility() == View.VISIBLE){
+        if(lvSearchResults.getVisibility() == View.VISIBLE){
             hideSearchResultsScreen();
         }
         else super.onBackPressed();
@@ -175,12 +173,12 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         viewPager.setCurrentItem(psalterNumber - 1, true); //viewpager goes by index
     }
     private void showSearchResultsScreen(){
-        llSearchResults.setVisibility(View.VISIBLE);
+        lvSearchResults.setVisibility(View.VISIBLE);
         viewPager.setVisibility(View.GONE);
         fab.setVisibility(View.GONE);
     }
     private void hideSearchResultsScreen(){
-        llSearchResults.setVisibility(View.GONE);
+        lvSearchResults.setVisibility(View.GONE);
         viewPager.setVisibility(View.VISIBLE);
         fab.setVisibility(View.VISIBLE);
     }
