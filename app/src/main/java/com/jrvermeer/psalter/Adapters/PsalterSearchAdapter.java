@@ -2,7 +2,6 @@ package com.jrvermeer.psalter.Adapters;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.support.annotation.NonNull;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -29,7 +28,7 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
     private String query;
     private PsalterDb db;
     private boolean psalmSearch;
-    public static char[] searchIgnoreChars = new char[] { '\'', ',', ';', ':', '\"'};
+    public static char[] ignoreChars = new char[] { '\'', ',', ';', ':', '\"'};
     public PsalterSearchAdapter(@NonNull Context context, PsalterDb psalterDb){
         super(context, R.layout.search_results_layout);
         db = psalterDb;
@@ -71,14 +70,13 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
             TextView tvLyrics = (TextView) convertView.findViewById(R.id.tvSearchLyrics);
             try{
                 if(psalmSearch){
-                    String displayVerse = psalter.getLyrics().substring(0, psalter.getLyrics().indexOf("\n\n"));
-                    tvLyrics.setText(displayVerse);
+                    tvLyrics.setText(psalter.getLyrics().substring(0, getVerseEndIndex(psalter.getLyrics(), 0)));
                 }
                 else{
                     String filterLyrics = psalter.getLyrics().toLowerCase();
                     int i = filterLyrics.indexOf(query);
-                    int iStart = getStartIndex(filterLyrics, i);
-                    int iEnd = getEndIndex(filterLyrics, i);
+                    int iStart = getVerseStartIndex(filterLyrics, i);
+                    int iEnd = getVerseEndIndex(filterLyrics, i);
 
                     String displayVerse = psalter.getLyrics().substring(iStart, iEnd);
                     String filterVerse = displayVerse.toLowerCase();
@@ -104,19 +102,19 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
     //filter out characters
     private String getFilteredQuery(String rawQuery){
         String filteredQuery = rawQuery;
-        for (char c : searchIgnoreChars) {
+        for (char c : ignoreChars) {
             filteredQuery = filteredQuery.replace(String.valueOf(c), "");
         }
         return filteredQuery;
     }
     //given random index in lyrics string, return index of the beginning of that verse
-    private int getStartIndex(String lyrics, int queryStartIndex){
+    private int getVerseStartIndex(String lyrics, int queryStartIndex){
         int startIndex = lyrics.lastIndexOf("\n\n", queryStartIndex);
         if(startIndex < 0) return 0;
         else return startIndex + 2; // don't need to display the 2 newline chars
     }
     //given random index in lyrics string, return index of the end of that verse
-    private int getEndIndex(String lyrics, int queryStartIndex){
+    private int getVerseEndIndex(String lyrics, int queryStartIndex){
         int i = lyrics.indexOf("\n\n", queryStartIndex);
         if(i > 0) return i;
         else return  lyrics.length() - 1;

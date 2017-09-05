@@ -13,7 +13,7 @@ import com.jrvermeer.psalter.Models.Psalter;
  */
 
 public class NotificationHelper {
-    public static final String ACTION_PLAY = "com.jrvermeer.psalter.ACTION_PLAY";
+    //public static final String ACTION_PLAY = "com.jrvermeer.psalter.ACTION_PLAY";
     //public static final String ACTION_NEXT = "com.jrvermeer.psalter.ACTION_NEXT";
 
     private static final int NOTIFICATION_ID = 0;
@@ -21,10 +21,7 @@ public class NotificationHelper {
 
     public static void notify(Context context, Psalter psalter){
         notificationManager = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-        //if(Build.VERSION.SDK_INT < 22){
-        buildNotificationApiUnder22(context, psalter);
-        //}
+        buildNotification(context, psalter);
     }
 
     public static void clearNotification(){
@@ -33,7 +30,7 @@ public class NotificationHelper {
         }
     }
 
-    private static void buildNotificationApiUnder22(Context context, Psalter psalter) {
+    private static void buildNotification(Context context, Psalter psalter) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
         builder.setSmallIcon(R.drawable.ic_smallicon);
         builder.setContentTitle(psalter.getDisplayTitle());

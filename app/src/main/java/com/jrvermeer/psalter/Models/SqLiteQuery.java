@@ -25,8 +25,8 @@ public class SqLiteQuery {
         queryParameters.add(value);
     }
 
-    public List<String> getParameters(){
-        return queryParameters;
+    public String[] getParameters(){
+        return queryParameters.toArray(new String[0]);
     }
 
     private List<String> queryParameters;

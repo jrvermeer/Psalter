@@ -5,7 +5,6 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
-import android.os.Build;
 
 import com.jrvermeer.psalter.Adapters.PsalterSearchAdapter;
 import com.jrvermeer.psalter.Models.Psalter;
@@ -89,19 +88,17 @@ public class PsalterDb extends SQLiteAssetHelper {
 
     private Cursor searchPsalterCursor(String searchText){
         SqLiteQuery lyrics = LyricsReplacePunctuation();
-        String[] args = new String[lyrics.getParameters().size() + 1];
-        lyrics.getParameters().toArray(args);
-        args[args.length - 1] = "%" + searchText + "%";
+        lyrics.addParameter("%" + searchText + "%");
 
-        return db.rawQuery("select _id, psalm, " + lyrics.getQueryText() + " l from psalter where l like ?", args );
+        return db.rawQuery("select _id, psalm, " + lyrics.getQueryText() + " l from psalter where l like ?", lyrics.getParameters() );
     }
 
     private SqLiteQuery LyricsReplacePunctuation(){
         SqLiteQuery query = new SqLiteQuery();
         query.setQueryText("lyrics");
-        for(int i = 0; i < PsalterSearchAdapter.searchIgnoreChars.length; i++){
+        for(int i = 0; i < PsalterSearchAdapter.ignoreChars.length; i++){
             query.setQueryText("replace(" + query.getQueryText() + ", ?, '')");
-            query.addParameter(String.valueOf(PsalterSearchAdapter.searchIgnoreChars[i]));
+            query.addParameter(String.valueOf(PsalterSearchAdapter.ignoreChars[i]));
         }
         return query;
     }

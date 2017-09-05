@@ -27,17 +27,17 @@ public class MediaService extends Service {
         return binder;
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        if(binder != null && intent.getAction().equals(NotificationHelper.ACTION_PLAY)){
-            // if playing, stop playback
-            if(binder.isPlaying()){
-                binder.stopMedia();
-            }
-            // if not playing, start playback
-        }
-        return super.onStartCommand(intent, flags, startId);
-    }
+//    @Override
+//    public int onStartCommand(Intent intent, int flags, int startId) {
+//        if(binder != null && intent.getAction().equals(NotificationHelper.ACTION_PLAY)){
+//            // if playing, stop playback
+//            if(binder.isPlaying()){
+//                binder.stopMedia();
+//            }
+//            // if not playing, start playback
+//        }
+//        return super.onStartCommand(intent, flags, startId);
+//    }
 
     public class MediaBinder extends Binder implements MediaPlayer.OnCompletionListener {
         private MediaBinder(){
