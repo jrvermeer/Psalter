@@ -299,7 +299,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
             try {
                 TextView tvNumber = (TextView) view.findViewById(R.id.tvSearchNumber);
-                int num = Integer.parseInt((String) tvNumber.getText());
+                int num = Integer.parseInt(tvNumber.getText().toString());
                 goToPsalter(num);
 
             } catch (Exception ex) {
