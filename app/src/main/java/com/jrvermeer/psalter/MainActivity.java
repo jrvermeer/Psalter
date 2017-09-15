@@ -278,7 +278,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                     fab.setImageResource(R.drawable.ic_stop_white_24dp);
                 }
                 else{
-                    Toast.makeText(MainActivity.this, "Audio not available", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Unable to play audio", Toast.LENGTH_SHORT).show();
                 }
             }
         }
