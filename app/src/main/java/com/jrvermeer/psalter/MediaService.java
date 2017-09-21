@@ -38,7 +38,7 @@ public class MediaService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(intent.getIntExtra(ACTION, -1) == ACTION_STOP && binder != null && binder.isPlaying()){
+        if(intent != null && intent.getIntExtra(ACTION, -1) == ACTION_STOP && binder != null && binder.isPlaying()){
             binder.stopMedia();
         }
         return super.onStartCommand(intent, flags, startId);
@@ -144,13 +144,14 @@ public class MediaService extends Service {
             builder.setSmallIcon(R.drawable.ic_smallicon)
                     //.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
                     .setContentTitle(psalter.getDisplayTitle())
-                    .setContentText(psalter.getDisplaySubtitle())
+                    .setContentText(String.format("Verse %d of %d", currentVerse, psalter.getNumverses()))
+                    .setSubText(psalter.getDisplaySubtitle())
                     .setContentIntent(openActivityOnTouch)
-                    .addAction(R.drawable.ic_stop_black_36dp, "Stop", stopPlaybackOnTouch)
-                    .setSubText(String.format("Verse %d of %d", currentVerse, psalter.getNumverses()))
-                    .setShowWhen(false).setPriority(100)
+                    .addAction(R.drawable.ic_stop_white_36dp, "Stop", stopPlaybackOnTouch)
+                    .setShowWhen(false)
                     .setStyle(new NotificationCompat.MediaStyle()
-                        .setShowActionsInCompactView(0));
+                        .setShowActionsInCompactView(0)
+                        .setShowCancelButton(true));
             return builder.build();
         }
 
