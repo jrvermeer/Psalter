@@ -46,4 +46,8 @@ public class Psalter {
             return "Lords Prayer";
         } else return "Psalm " + psalm;
     }
+
+    public String getAudioFileName(){
+        return "_" + getNumber();
+    }
 }

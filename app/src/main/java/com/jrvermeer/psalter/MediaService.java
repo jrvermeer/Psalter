@@ -1,7 +1,6 @@
 package com.jrvermeer.psalter;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -24,7 +23,10 @@ import com.jrvermeer.psalter.Models.Psalter;
 
 public class MediaService extends Service {
     private MediaBinder binder;
+    private final int ITERATION_DELAY_MS = 700;
     private final int NOTIFICATION_ID = 1234;
+    private final String ACTION = "action";
+    private final int ACTION_STOP = 1253283478;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -32,6 +34,14 @@ public class MediaService extends Service {
             binder = new MediaBinder();
         }
         return binder;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if(intent.getIntExtra(ACTION, -1) == ACTION_STOP && binder != null && binder.isPlaying()){
+            binder.stopMedia();
+        }
+        return super.onStartCommand(intent, flags, startId);
     }
 
     public class MediaBinder extends Binder implements MediaPlayer.OnCompletionListener, AudioManager.OnAudioFocusChangeListener{
@@ -42,21 +52,21 @@ public class MediaService extends Service {
         private MediaPlayer mediaPlayer;
         private IMediaCallbacks mediaCallbacks;
         private AudioManager audioManager;
+        private State state;
 
         private Handler handler = new Handler();
         private Runnable playNextVerse = new Runnable() {
             @Override
             public void run() {
-                if(betweenVerses){ // media could have been stopped between verses
+                if(state != null){ // media could have been stopped between verses
                     mediaPlayer.start();
-                    betweenVerses = false;
+                    startForeground(NOTIFICATION_ID, getNotification(state.psalter, state.currentVerse));
+                    state.betweenVerses = false;
                 }
             }
         };
-        private int iterationDelay_ms = 700;
-        private int numberIterationsToPlay = 1;
-        private int currentIteration = 0;
-        private boolean betweenVerses = false;
+
+
 
         public void setCallbacks(@NonNull final IMediaCallbacks callbacks){
             mediaCallbacks = callbacks;
@@ -67,12 +77,11 @@ public class MediaService extends Service {
             try{
                 stopMedia();
                 if(audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED){
-                    int resID = getResources().getIdentifier("_" + psalter.getNumber(), "raw", getPackageName());
+                    int resID = getResources().getIdentifier(psalter.getAudioFileName(), "raw", getPackageName());
                     AssetFileDescriptor afd = getApplicationContext().getResources().openRawResourceFd(resID);
                     mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
                     afd.close();
-                    numberIterationsToPlay = psalter.getNumverses();
-                    currentIteration = 0;
+                    state = new State(psalter);
                     mediaPlayer.prepare();
                     mediaPlayer.start();
                     startForeground(NOTIFICATION_ID, getNotification(psalter));
@@ -83,23 +92,24 @@ public class MediaService extends Service {
             }
         }
 
+
         public void stopMedia(){
-            betweenVerses = false;
+            state = null;
             if(mediaPlayer.isPlaying()) mediaPlayer.stop();
             playbackStopped();
         }
 
         public boolean isPlaying(){
-            return mediaPlayer.isPlaying() || betweenVerses;
+            return mediaPlayer.isPlaying() || (state != null && state.betweenVerses);
         }
 
 
         @Override
         public void onCompletion(final MediaPlayer mediaPlayer) {
-            currentIteration++;
-            if(currentIteration < numberIterationsToPlay){
-                betweenVerses = true;
-                handler.postDelayed(playNextVerse, iterationDelay_ms);
+            state.currentVerse++;
+            if(state.currentVerse <= state.psalter.getNumverses()){
+                state.betweenVerses = true;
+                handler.postDelayed(playNextVerse, ITERATION_DELAY_MS);
             }
             else playbackStopped();
 
@@ -121,18 +131,38 @@ public class MediaService extends Service {
         }
 
         public Notification getNotification(Psalter psalter) {
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(MediaService.this);
-            builder.setSmallIcon(R.drawable.ic_smallicon);
-            builder.setContentTitle(psalter.getDisplayTitle());
-            builder.setContentText(psalter.getDisplaySubtitle());
-            builder.setOngoing(true);
-
+            return getNotification(psalter, 1);
+        }
+        public Notification getNotification(Psalter psalter, int currentVerse) {
             Intent openActivity = new Intent(MediaService.this, MainActivity.class);
-            PendingIntent intent = PendingIntent.getActivity(MediaService.this, 0, openActivity, 0);
+            PendingIntent openActivityOnTouch = PendingIntent.getActivity(MediaService.this, 0, openActivity, 0);
 
-            builder.setContentIntent(intent);
+            Intent stopPlayback = new Intent(MediaService.this, MediaService.class).putExtra(ACTION, ACTION_STOP);
+            PendingIntent stopPlaybackOnTouch = PendingIntent.getService(MediaService.this, 0, stopPlayback, 0);
 
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(MediaService.this);
+            builder.setSmallIcon(R.drawable.ic_smallicon)
+                    //.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
+                    .setContentTitle(psalter.getDisplayTitle())
+                    .setContentText(psalter.getDisplaySubtitle())
+                    .setContentIntent(openActivityOnTouch)
+                    .addAction(R.drawable.ic_stop_black_36dp, "Stop", stopPlaybackOnTouch)
+                    .setSubText(String.format("Verse %d of %d", currentVerse, psalter.getNumverses()))
+                    .setShowWhen(false).setPriority(100)
+                    .setStyle(new NotificationCompat.MediaStyle()
+                        .setShowActionsInCompactView(0));
             return builder.build();
+        }
+
+        private class State {
+            public State(Psalter p){
+                psalter = p;
+                currentVerse = 1;
+                betweenVerses = false;
+            }
+            private int currentVerse;
+            private boolean betweenVerses;
+            private Psalter psalter;
         }
     }
 
