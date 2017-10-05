@@ -29,9 +29,9 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
     private PsalterDb db;
     private boolean psalmSearch;
     public static char[] ignoreChars = new char[] { '\'', ',', ';', ':', '\"'};
-    public PsalterSearchAdapter(@NonNull Context context, PsalterDb psalterDb){
+    public PsalterSearchAdapter(@NonNull Context context){
         super(context, R.layout.search_results_layout);
-        db = psalterDb;
+        db = new PsalterDb(context);
     }
 
     public void queryPsalter(String searchQuery){

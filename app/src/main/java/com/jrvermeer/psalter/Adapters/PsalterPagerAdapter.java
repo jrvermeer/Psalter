@@ -22,9 +22,9 @@ public class PsalterPagerAdapter extends PagerAdapter {
     private PsalterDb db;
     private HashMap<Integer, Psalter> items;
 
-    public PsalterPagerAdapter(Context context, PsalterDb psalterDb){
+    public PsalterPagerAdapter(Context context){
         _context = context;
-        db = psalterDb;
+        db = new PsalterDb(context);
     }
 
     @Override

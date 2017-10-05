@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Vibrator;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
@@ -32,14 +33,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements MediaService.IMediaCallbacks {
-    private MediaService.MediaBinder service;
+    private MediaService service;
     private SharedPreferences sPref;
     private ViewPager viewPager;
     private FloatingActionButton fab;
     private Random rand = new Random();
     private ListView lvSearchResults;
     private MenuItem searchMenuItem;
-    private PsalterDb db;
+    //private PsalterDb db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,9 +56,8 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         setContentView(R.layout.activity_main);
 
         // initialize search results
-        db = new PsalterDb(this);
         lvSearchResults = (ListView)findViewById(R.id.lvSearchResults);
-        lvSearchResults.setAdapter(new PsalterSearchAdapter(this, db));
+        lvSearchResults.setAdapter(new PsalterSearchAdapter(this));
         lvSearchResults.setOnItemClickListener(searchItemClickListener);
 
         // initialize toolbar
@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
         // initialize main psalter viewpager
         viewPager = (ViewPager)findViewById(R.id.viewpager);
-        final PsalterPagerAdapter adapter = new PsalterPagerAdapter(this, db);
+        final PsalterPagerAdapter adapter = new PsalterPagerAdapter(this);
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(5);
         viewPager.addOnPageChangeListener(pageChangeListener);
@@ -76,15 +76,16 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         // initialize fab
         fab = ((FloatingActionButton)findViewById(R.id.fab));
         fab.setOnClickListener(fabListener);
+        fab.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                return shuffle();
+            }
+        });
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
         getApplicationContext().bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
     }
 
     @Override
@@ -122,7 +123,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         getMenuInflater().inflate(R.menu.menu_options, menu);
         boolean nightMode = sPref.getBoolean(getResources().getString(R.string.key_nightmode), false);
         if(nightMode){
-            menu.getItem(3).setChecked(true);
+            menu.findItem(R.id.action_nightmode).setChecked(true);
         }
         searchMenuItem = menu.findItem(R.id.action_search);
         final SearchView searchView = (SearchView)searchMenuItem.getActionView();
@@ -161,29 +162,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         return true;
     }
 
-    private void stringSearch(String query){
-        showSearchResultsScreen();
-        ((PsalterSearchAdapter)lvSearchResults.getAdapter()).queryPsalter(query);
-        lvSearchResults.setSelectionAfterHeaderView();
-    }
-
-    private void goToPsalter(int psalterNumber){
-        searchMenuItem.collapseActionView();
-        hideSearchResultsScreen();
-        viewPager.setCurrentItem(psalterNumber - 1, true); //viewpager goes by index
-    }
-    private void showSearchResultsScreen(){
-        lvSearchResults.setVisibility(View.VISIBLE);
-        viewPager.setVisibility(View.GONE);
-        fab.setVisibility(View.GONE);
-    }
-    private void hideSearchResultsScreen(){
-        lvSearchResults.setVisibility(View.GONE);
-        viewPager.setVisibility(View.VISIBLE);
-        fab.setVisibility(View.VISIBLE);
-    }
-
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -194,9 +172,10 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             recreate();
         }
         else if(id == R.id.action_random){
-            int number = rand.nextInt(viewPager.getAdapter().getCount()); // random number between 0 and 433 (inclusive)
-            viewPager.setCurrentItem(number, true);
+            int numberIndex = rand.nextInt(viewPager.getAdapter().getCount()); // random number between 0 and 433 (inclusive)
+            viewPager.setCurrentItem(numberIndex, true);
         }
+        else if(id == R.id.action_shuffle) shuffle();
         else if(id == R.id.action_goto_psalm){
             int psalm = ((PsalterPagerAdapter)viewPager.getAdapter()).getPsalter(viewPager.getCurrentItem()).getPsalm();
             String url = "https://www.biblegateway.com/passage?search=Psalm+" + psalm;
@@ -245,19 +224,64 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         return true;
     }
 
+    private void stringSearch(String query){
+        showSearchResultsScreen();
+        ((PsalterSearchAdapter)lvSearchResults.getAdapter()).queryPsalter(query);
+        lvSearchResults.setSelectionAfterHeaderView();
+    }
+
+    private void goToPsalter(int psalterNumber){
+        searchMenuItem.collapseActionView();
+        hideSearchResultsScreen();
+        viewPager.setCurrentItem(psalterNumber - 1, true); //viewpager goes by index
+    }
+    private void showSearchResultsScreen(){
+        lvSearchResults.setVisibility(View.VISIBLE);
+        viewPager.setVisibility(View.GONE);
+        fab.setVisibility(View.GONE);
+    }
+    private void hideSearchResultsScreen(){
+        lvSearchResults.setVisibility(View.GONE);
+        viewPager.setVisibility(View.VISIBLE);
+        fab.setVisibility(View.VISIBLE);
+    }
+
+    public boolean shuffle(){
+        if(service != null && service.shuffleAllAudio(viewPager.getCurrentItem() + 1)){
+            playerStarted();
+            Toast.makeText(this, "Shuffling", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        return false;
+    }
+
+    public void playerStarted(){
+        fab.setImageResource(R.drawable.ic_stop_white_24dp);
+    }
+
     //MediaCallbacks Interface
     @Override
     public void playerFinished() {
         fab.setImageResource(R.drawable.ic_play_arrow_white_24dp);
     }
 
+    @Override
+    public void setCurrentNumber(final int number){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                goToPsalter(number);
+            }
+        });
+    }
+
     ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            service = (MediaService.MediaBinder) iBinder;
+            service = ((MediaService.MediaBinder)iBinder).getServiceInstance();
             service.setCallbacks(MainActivity.this);
             if(service.isPlaying()){
-                fab.setImageResource(R.drawable.ic_stop_white_24dp);
+                playerStarted();
             }
         }
 
@@ -274,8 +298,8 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                 service.stopMedia();
             }
             else {
-                if(service.playMedia(db.getPsalter(viewPager.getCurrentItem() + 1))) {
-                    fab.setImageResource(R.drawable.ic_stop_white_24dp);
+                if(service.playPsalterNumber(viewPager.getCurrentItem() + 1)) {
+                    playerStarted();
                 }
                 else{
                     Toast.makeText(MainActivity.this, "Unable to play audio", Toast.LENGTH_SHORT).show();
@@ -284,14 +308,15 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         }
     };
 
+
     private ViewPager.OnPageChangeListener pageChangeListener = new ViewPager.OnPageChangeListener() {
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
         @Override
         public void onPageScrollStateChanged(int state) {}
         @Override
-        public void onPageSelected(int position) {
-            if(service != null) service.stopMedia();
+        public void onPageSelected(int index) {
+            if(service != null && !service.isPlaying(index + 1)) service.stopMedia();
         }
     };
     private AdapterView.OnItemClickListener searchItemClickListener = new AdapterView.OnItemClickListener() {
