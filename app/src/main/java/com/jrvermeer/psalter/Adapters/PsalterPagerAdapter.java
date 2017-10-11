@@ -22,7 +22,6 @@ import java.util.HashMap;
 public class PsalterPagerAdapter extends PagerAdapter {
     private Context _context;
     private PsalterDb db;
-    private HashMap<Integer, Psalter> items;
 
     public PsalterPagerAdapter(Context context){
         _context = context;
@@ -70,7 +69,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
     }
 
 
-    public Psalter getPsalter(int pagerIndex){
+    private Psalter getPsalter(int pagerIndex){
         return db.getPsalter(pagerIndex + 1);
     }
 

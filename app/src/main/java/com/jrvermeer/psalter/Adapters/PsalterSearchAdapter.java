@@ -19,6 +19,9 @@ import com.jrvermeer.psalter.Models.Psalter;
 import com.jrvermeer.psalter.PsalterDb;
 import com.jrvermeer.psalter.R;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 /**
  * Created by Jonathan on 4/4/2017.
  */
@@ -27,11 +30,13 @@ import com.jrvermeer.psalter.R;
 public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
     private String query;
     private PsalterDb db;
+    LayoutInflater inflater;
     private boolean psalmSearch;
     public static char[] ignoreChars = new char[] { '\'', ',', ';', ':', '\"'};
     public PsalterSearchAdapter(@NonNull Context context){
         super(context, R.layout.search_results_layout);
         db = new PsalterDb(context);
+        inflater = LayoutInflater.from(context);
     }
 
     public void queryPsalter(String searchQuery){
@@ -62,37 +67,34 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         try {
-            Psalter psalter = getItem(position);
+            ViewHolder holder;
             if (convertView == null) {
-                LayoutInflater inflater = LayoutInflater.from(getContext());
                 convertView = inflater.inflate(R.layout.search_results_layout, parent, false);
+                holder = new ViewHolder(convertView);
+                convertView.setTag(holder);
             }
-            TextView tvLyrics = (TextView) convertView.findViewById(R.id.tvSearchLyrics);
-            try{
-                if(psalmSearch){
-                    tvLyrics.setText(psalter.getLyrics().substring(0, getVerseEndIndex(psalter.getLyrics(), 0)));
-                }
-                else{
-                    String filterLyrics = psalter.getLyrics().toLowerCase();
-                    int i = filterLyrics.indexOf(query);
-                    int iStart = getVerseStartIndex(filterLyrics, i);
-                    int iEnd = getVerseEndIndex(filterLyrics, i);
+            else holder = (ViewHolder)convertView.getTag();
 
-                    String displayVerse = psalter.getLyrics().substring(iStart, iEnd);
-                    String filterVerse = displayVerse.toLowerCase();
-                    SpannableStringBuilder str = new SpannableStringBuilder(displayVerse);
-                    int iHighlightStart = filterVerse.indexOf(query);
-                    int iHighlightEnd = iHighlightStart + query.length();
-                    str.setSpan(new StyleSpan(Typeface.BOLD), iHighlightStart, iHighlightEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    str.setSpan(new AbsoluteSizeSpan((int)(tvLyrics.getTextSize() * 1.5)), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    tvLyrics.setText(str);
-                }
-
-            }catch (Exception ex){
-                Log.e("PsalterSearchAdapter", ex.getMessage());
+            Psalter psalter = getItem(position);
+            holder.tvNumber.setText(String.valueOf(psalter.getNumber()));
+            if(psalmSearch){
+                holder.tvLyrics.setText(psalter.getLyrics().substring(0, getVerseEndIndex(psalter.getLyrics(), 0)));
             }
-            TextView tvNumber = (TextView) convertView.findViewById(R.id.tvSearchNumber);
-            tvNumber.setText(String.valueOf(psalter.getNumber()));
+            else{ //lyric search
+                String filterLyrics = psalter.getLyrics().toLowerCase();
+                int i = filterLyrics.indexOf(query);
+                int iStart = getVerseStartIndex(filterLyrics, i);
+                int iEnd = getVerseEndIndex(filterLyrics, i);
+
+                String displayVerse = psalter.getLyrics().substring(iStart, iEnd);
+                String filterVerse = displayVerse.toLowerCase();
+                SpannableStringBuilder str = new SpannableStringBuilder(displayVerse);
+                int iHighlightStart = filterVerse.indexOf(query);
+                int iHighlightEnd = iHighlightStart + query.length();
+                str.setSpan(new StyleSpan(Typeface.BOLD), iHighlightStart, iHighlightEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                str.setSpan(new AbsoluteSizeSpan((int)(holder.tvLyrics.getTextSize() * 1.5)), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                holder.tvLyrics.setText(str);
+            }
             return convertView;
 
         } catch (Exception ex){
@@ -118,5 +120,12 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
         int i = lyrics.indexOf("\n\n", queryStartIndex);
         if(i > 0) return i;
         else return  lyrics.length() - 1;
+    }
+    static class ViewHolder{
+        @BindView(R.id.tvSearchNumber) TextView tvNumber;
+        @BindView(R.id.tvSearchLyrics) TextView tvLyrics;
+        public ViewHolder(View view){
+            ButterKnife.bind(this, view);
+        }
     }
 }

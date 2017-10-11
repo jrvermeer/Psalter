@@ -123,7 +123,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if(mState != null){ // media could have been stopped between verses
+                        if(mState != null && mState.betweenVerses){ // media could have been stopped between verses
                             mediaPlayer.start();
                             startForeground(NOTIFICATION_ID, getNotification());
                             mState.betweenVerses = false;

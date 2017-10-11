@@ -32,14 +32,21 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import butterknife.OnItemClick;
+import butterknife.OnLongClick;
+
 public class MainActivity extends AppCompatActivity implements MediaService.IMediaCallbacks {
     private MediaService service;
     private SharedPreferences sPref;
-    private ViewPager viewPager;
-    private FloatingActionButton fab;
     private Random rand = new Random();
-    private ListView lvSearchResults;
-    private MenuItem searchMenuItem;
+    @BindView(R.id.viewpager) ViewPager viewPager;
+    @BindView(R.id.fab) FloatingActionButton fab;
+    @BindView(R.id.lvSearchResults) ListView lvSearchResults;
+    @BindView(R.id.toolbar) Toolbar toolbar;
+    MenuItem searchMenuItem;
     //private PsalterDb db;
 
     @Override
@@ -49,39 +56,24 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         // initialize theme (must do this before calling setContentView())
         sPref = getSharedPreferences("settings", MODE_PRIVATE);
         boolean nightMode = sPref.getBoolean(getResources().getString(R.string.key_nightmode), false);
-        if(nightMode){
-            setTheme(R.style.AppTheme_Dark);
-        }
+        if(nightMode) setTheme(R.style.AppTheme_Dark);
         else setTheme(R.style.AppTheme_Light);
         setContentView(R.layout.activity_main);
 
+        ButterKnife.bind(this);
+
         // initialize search results
-        lvSearchResults = (ListView)findViewById(R.id.lvSearchResults);
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this));
-        lvSearchResults.setOnItemClickListener(searchItemClickListener);
 
         // initialize toolbar
-        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         // initialize main psalter viewpager
-        viewPager = (ViewPager)findViewById(R.id.viewpager);
-        final PsalterPagerAdapter adapter = new PsalterPagerAdapter(this);
-        viewPager.setAdapter(adapter);
+        viewPager.setAdapter(new PsalterPagerAdapter(this));
         viewPager.setOffscreenPageLimit(5);
         viewPager.addOnPageChangeListener(pageChangeListener);
         int pagerIndex = sPref.getInt(getResources().getString(R.string.key_lastindex), 0);
         viewPager.setCurrentItem(pagerIndex);
-
-        // initialize fab
-        fab = ((FloatingActionButton)findViewById(R.id.fab));
-        fab.setOnClickListener(fabListener);
-        fab.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                return shuffle();
-            }
-        });
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
@@ -268,6 +260,49 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         });
     }
 
+    @OnClick(R.id.fab)
+    public void fabClick() {
+        if(service == null) return;
+
+        if(service.isPlaying()){
+            service.stopMedia();
+        }
+        else {
+            if(service.playPsalterNumber(viewPager.getCurrentItem() + 1)) {
+                playerStarted();
+            }
+            else{
+                Toast.makeText(MainActivity.this, "Unable to play audio", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    @OnLongClick(R.id.fab)
+    public boolean fabLongClick() {
+        return shuffle();
+    }
+
+    @OnItemClick(R.id.lvSearchResults)
+    public void onItemClick(View view) {
+        try {
+            TextView tvNumber = (TextView) view.findViewById(R.id.tvSearchNumber);
+            int num = Integer.parseInt(tvNumber.getText().toString());
+            goToPsalter(num);
+
+        } catch (Exception ex) {
+            Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private ViewPager.OnPageChangeListener pageChangeListener = new ViewPager.OnPageChangeListener() {
+        @Override
+        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+        @Override
+        public void onPageScrollStateChanged(int state) {}
+        @Override
+        public void onPageSelected(int index) {
+            if(service != null && !service.isPlaying(index + 1)) service.stopMedia();
+        }
+    };
     ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -280,49 +315,5 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) { }
-    };
-
-    private View.OnClickListener fabListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            if(service == null) return;
-
-            if(service.isPlaying()){
-                service.stopMedia();
-            }
-            else {
-                if(service.playPsalterNumber(viewPager.getCurrentItem() + 1)) {
-                    playerStarted();
-                }
-                else{
-                    Toast.makeText(MainActivity.this, "Unable to play audio", Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-    };
-
-
-    private ViewPager.OnPageChangeListener pageChangeListener = new ViewPager.OnPageChangeListener() {
-        @Override
-        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-        @Override
-        public void onPageScrollStateChanged(int state) {}
-        @Override
-        public void onPageSelected(int index) {
-            if(service != null && !service.isPlaying(index + 1)) service.stopMedia();
-        }
-    };
-    private AdapterView.OnItemClickListener searchItemClickListener = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-            try {
-                TextView tvNumber = (TextView) view.findViewById(R.id.tvSearchNumber);
-                int num = Integer.parseInt(tvNumber.getText().toString());
-                goToPsalter(num);
-
-            } catch (Exception ex) {
-                Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        }
     };
 }
