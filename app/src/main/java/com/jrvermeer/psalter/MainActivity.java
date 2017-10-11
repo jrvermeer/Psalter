@@ -5,10 +5,8 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Vibrator;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
@@ -19,8 +17,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,14 +25,13 @@ import com.jrvermeer.psalter.Adapters.PsalterPagerAdapter;
 import com.jrvermeer.psalter.Adapters.PsalterSearchAdapter;
 
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnItemClick;
 import butterknife.OnLongClick;
+import butterknife.OnPageChange;
 
 public class MainActivity extends AppCompatActivity implements MediaService.IMediaCallbacks {
     private MediaService service;
@@ -47,7 +42,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     @BindView(R.id.lvSearchResults) ListView lvSearchResults;
     @BindView(R.id.toolbar) Toolbar toolbar;
     MenuItem searchMenuItem;
-    //private PsalterDb db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,18 +56,13 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
         ButterKnife.bind(this);
 
-        // initialize search results
-        lvSearchResults.setAdapter(new PsalterSearchAdapter(this));
-
-        // initialize toolbar
         setSupportActionBar(toolbar);
 
-        // initialize main psalter viewpager
+        lvSearchResults.setAdapter(new PsalterSearchAdapter(this));
         viewPager.setAdapter(new PsalterPagerAdapter(this));
         viewPager.setOffscreenPageLimit(5);
-        viewPager.addOnPageChangeListener(pageChangeListener);
-        int pagerIndex = sPref.getInt(getResources().getString(R.string.key_lastindex), 0);
-        viewPager.setCurrentItem(pagerIndex);
+        int savedPageIndex = sPref.getInt(getResources().getString(R.string.key_lastindex), 0);
+        viewPager.setCurrentItem(savedPageIndex);
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
@@ -96,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
     @Override
     protected void onDestroy() {
-        // save current page when using back button to close application, since onSaveInstanceState is not called
+        // onSaveInstanceState is not called when using back button to close application
         saveState();
         if(service != null && isFinishing()){
             service.stopMedia();
@@ -106,19 +95,42 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     private void saveState(){
-        sPref.edit().putInt(getResources().getString(R.string.key_lastindex), viewPager.getCurrentItem()).commit();
+        sPref.edit().putInt(getResources().getString(R.string.key_lastindex), viewPager.getCurrentItem()).apply();
     }
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_options, menu);
+
         boolean nightMode = sPref.getBoolean(getResources().getString(R.string.key_nightmode), false);
-        if(nightMode){
-            menu.findItem(R.id.action_nightmode).setChecked(true);
-        }
+        menu.findItem(R.id.action_nightmode).setChecked(nightMode);
+
         searchMenuItem = menu.findItem(R.id.action_search);
         final SearchView searchView = (SearchView)searchMenuItem.getActionView();
+
+        final String[] hints = getResources().getStringArray(R.array.search_hints);
+        final Handler handler = new Handler();
+        final Runnable loopHints = new Runnable() {
+            private int iteration = 0;
+            @Override
+            public void run() {
+                searchView.setQueryHint(hints[iteration++ % hints.length]);
+                handler.postDelayed(this, 2000);
+            }
+        };
+        MenuItemCompat.setOnActionExpandListener(searchMenuItem, new MenuItemCompat.OnActionExpandListener() {
+            @Override
+            public boolean onMenuItemActionExpand(MenuItem item) {
+                handler.post(loopHints);
+                return true;
+            }
+            @Override
+            public boolean onMenuItemActionCollapse(MenuItem item) {
+                handler.removeCallbacks(loopHints);
+                hideSearchResultsScreen();
+                return true;
+            }
+        });
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -134,7 +146,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                     searchView.clearFocus();
                 }
             }
-
             @Override
             public boolean onQueryTextChange(String newText) {
                 try{
@@ -150,7 +161,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
                 }
             }
         });
-
         return true;
     }
 
@@ -159,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         int id = item.getItemId();
         if(id == R.id.action_nightmode){
             boolean nightmode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
-            sPref.edit().putBoolean(getResources().getString(R.string.key_nightmode), nightmode).commit();
+            sPref.edit().putBoolean(getResources().getString(R.string.key_nightmode), nightmode).apply();
             item.setChecked(nightmode);
             recreate();
         }
@@ -168,42 +178,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             viewPager.setCurrentItem(numberIndex, true);
         }
         else if(id == R.id.action_shuffle) shuffle();
-        else if(id == R.id.action_search){
-            final SearchView searchView = (SearchView)item.getActionView();
-            final Timer timer = new Timer();
-            final Handler handler = new Handler();
-            MenuItemCompat.setOnActionExpandListener(item, new MenuItemCompat.OnActionExpandListener() {
-                @Override
-                public boolean onMenuItemActionExpand(MenuItem item) {
-                    final String[] hints = getResources().getStringArray(R.array.search_hints);
-                    final TimerTask task = new TimerTask() {
-                        private int iteration = 0;
-                        @Override
-                        public void run() {
-                            run(iteration++);
-                        }
-
-                        public void run(final int iteration){
-                            handler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    searchView.setQueryHint(hints[iteration % hints.length]);
-                                }
-                            });
-                        }
-                    };
-                    timer.schedule(task, 0, 2000);
-                    return true;
-                }
-
-                @Override
-                public boolean onMenuItemActionCollapse(MenuItem item) {
-                    timer.cancel();
-                    hideSearchResultsScreen();
-                    return true;
-                }
-            });
-        }
         else return false;
 
         return true;
@@ -231,6 +205,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         fab.setVisibility(View.VISIBLE);
     }
 
+    @OnLongClick(R.id.fab)
     public boolean shuffle(){
         if(service != null && service.shuffleAllAudio(viewPager.getCurrentItem() + 1)){
             playerStarted();
@@ -276,15 +251,11 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             }
         }
     }
-    @OnLongClick(R.id.fab)
-    public boolean fabLongClick() {
-        return shuffle();
-    }
 
     @OnItemClick(R.id.lvSearchResults)
     public void onItemClick(View view) {
         try {
-            TextView tvNumber = (TextView) view.findViewById(R.id.tvSearchNumber);
+            TextView tvNumber = ((PsalterSearchAdapter.ViewHolder)view.getTag()).tvNumber;
             int num = Integer.parseInt(tvNumber.getText().toString());
             goToPsalter(num);
 
@@ -292,17 +263,10 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
-
-    private ViewPager.OnPageChangeListener pageChangeListener = new ViewPager.OnPageChangeListener() {
-        @Override
-        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-        @Override
-        public void onPageScrollStateChanged(int state) {}
-        @Override
-        public void onPageSelected(int index) {
-            if(service != null && !service.isPlaying(index + 1)) service.stopMedia();
-        }
-    };
+    @OnPageChange(R.id.viewpager)
+    public void onPageSelected(int index) {
+        if(service != null && !service.isPlaying(index + 1)) service.stopMedia();
+    }
     ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -316,4 +280,5 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         @Override
         public void onServiceDisconnected(ComponentName componentName) { }
     };
+    //SearchView.OnQueryTextListener svQueryListener =
 }

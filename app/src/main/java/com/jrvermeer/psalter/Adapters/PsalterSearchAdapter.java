@@ -121,9 +121,9 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
         if(i > 0) return i;
         else return  lyrics.length() - 1;
     }
-    static class ViewHolder{
-        @BindView(R.id.tvSearchNumber) TextView tvNumber;
-        @BindView(R.id.tvSearchLyrics) TextView tvLyrics;
+    public static class ViewHolder{
+        @BindView(R.id.tvSearchNumber) public TextView tvNumber;
+        @BindView(R.id.tvSearchLyrics) public TextView tvLyrics;
         public ViewHolder(View view){
             ButterKnife.bind(this, view);
         }
