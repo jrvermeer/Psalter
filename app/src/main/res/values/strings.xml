@@ -4,9 +4,8 @@
     <string name="key_lastindex">key_lastindex</string>
     <string name="action_nightmode">Night Mode</string>
     <string name="action_random">Random</string>
-    <string name="action_goto_psalm">Go to Psalm</string>
     <string name="action_search">Search</string>
-    <string name="action_shuffle">Shuffle audio</string>
+    <string name="action_shuffle">Shuffle Audio</string>
     <string name="search_hint">e.g. 427</string>
     <string name="title_activity_search">SearchActivity</string>
 

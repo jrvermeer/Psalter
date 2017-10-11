@@ -15,21 +15,17 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.media.VolumeProviderCompat;
 import android.support.v7.app.NotificationCompat;
 
 import com.jrvermeer.psalter.Models.Psalter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 /**
  * Created by Jonathan on 4/3/2017.
  */
 
-public class MediaService extends Service implements AudioManager.OnAudioFocusChangeListener {
+public class MediaService extends Service implements AudioManager.OnAudioFocusChangeListener, MediaPlayer.OnCompletionListener {
     private MediaBinder mBinder = new MediaBinder();
     private IMediaCallbacks mediaCallbacks = null;
 
@@ -39,7 +35,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private State mState = null;
     private Random rand = new Random();
 
-    private final int ITERATION_DELAY_MS = 700;
+    private final int MS_BETWEEN_VERSES = 700;
     private final int NOTIFICATION_ID = 1234;
     private final String ACTION = "action";
     private static int ACTION_STOP = 5;
@@ -107,7 +103,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                 AssetFileDescriptor afd = getAssetFileDescriptor(psalter);
                 mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
                 afd.close();
-                mediaPlayer.setOnCompletionListener(shuffle ? shuffleCompletionListener : standardCompletionlistener);
+                mediaPlayer.setOnCompletionListener(this);
                 mediaPlayer.prepare();
                 mediaPlayer.start();
                 startForeground(NOTIFICATION_ID, getNotification());
@@ -133,31 +129,22 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                             mState.betweenVerses = false;
                         }
                     }
-                }, ITERATION_DELAY_MS);
+                }, MS_BETWEEN_VERSES);
                 return true;
             }
         }
         return false;
     }
-    MediaPlayer.OnCompletionListener standardCompletionlistener = new MediaPlayer.OnCompletionListener() {
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer) {
-            if(!playNextVerse()) playbackStopped(true);
-        }
-    };
-    MediaPlayer.OnCompletionListener shuffleCompletionListener = new MediaPlayer.OnCompletionListener() {
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer) {
-            if(!playNextVerse()){
-                int nextIndex = rand.nextInt(db.getCount());
-                Psalter psalter = db.getPsalter(nextIndex + 1);
-                playPsalter(psalter, true);
-                if(mediaCallbacks != null){
-                    mediaCallbacks.setCurrentNumber(psalter.getNumber());
-                }
+
+    @Override
+    public void onCompletion(MediaPlayer mediaPlayer) {
+        if(!playNextVerse()){
+            if(mState.isShuffling){
+                playRandomNumber();
             }
+            else playbackStopped(true);
         }
-    };
+    }
 
     private AssetFileDescriptor getAssetFileDescriptor(Psalter psalter) {
         int resID = getResources().getIdentifier(psalter.getAudioFileName(), "raw", getPackageName());

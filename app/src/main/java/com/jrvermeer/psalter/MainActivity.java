@@ -176,13 +176,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             viewPager.setCurrentItem(numberIndex, true);
         }
         else if(id == R.id.action_shuffle) shuffle();
-        else if(id == R.id.action_goto_psalm){
-            int psalm = ((PsalterPagerAdapter)viewPager.getAdapter()).getPsalter(viewPager.getCurrentItem()).getPsalm();
-            String url = "https://www.biblegateway.com/passage?search=Psalm+" + psalm;
-            Intent i = new Intent(Intent.ACTION_VIEW);
-            i.setData(Uri.parse(url));
-            startActivity(i);
-        }
         else if(id == R.id.action_search){
             final SearchView searchView = (SearchView)item.getActionView();
             final Timer timer = new Timer();

@@ -47,6 +47,15 @@ public class Psalter {
         } else return "Psalm " + psalm;
     }
 
+    public String getClickableLink(){
+        String passage;
+        if(psalm == 0){ //Lords prayer
+            passage = "Matthew+6:9-13";
+        }
+        else passage = "Psalm+" + getPsalm();
+        return String.format("<a href=https://www.biblegateway.com/passage?search=%s>%s</a>", passage, getDisplaySubtitle());
+    }
+
     public String getAudioFileName(){
         return "_" + getNumber();
     }

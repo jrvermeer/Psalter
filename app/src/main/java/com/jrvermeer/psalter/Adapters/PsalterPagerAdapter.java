@@ -2,6 +2,8 @@ package com.jrvermeer.psalter.Adapters;
 
 import android.content.Context;
 import android.support.v4.view.PagerAdapter;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,7 +38,9 @@ public class PsalterPagerAdapter extends PagerAdapter {
             ViewGroup layout = (ViewGroup)inflater.inflate(R.layout.psalter_layout, collection, false);
 
             ((TextView)layout.findViewById(R.id.tvPagerLyrics)).setText(psalter.getLyrics());
-            ((TextView)layout.findViewById(R.id.tvPagerPsalm)).setText(psalter.getDisplaySubtitle());
+            TextView tvPagerPsalm = ((TextView)layout.findViewById(R.id.tvPagerPsalm));
+            tvPagerPsalm.setText(Html.fromHtml(psalter.getClickableLink()));
+            tvPagerPsalm.setMovementMethod(LinkMovementMethod.getInstance());
             collection.addView(layout);
             return layout;
         } catch (Exception ex){
