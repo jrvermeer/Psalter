@@ -32,7 +32,7 @@ public class PsalterDb extends SQLiteAssetHelper {
     public int getCount(){
         try{
             return (int)DatabaseUtils.queryNumEntries(db, TABLE_NAME);
-        } catch (Exception ex){
+        } catch (Exception ex){;
             return 0;
         }
     }

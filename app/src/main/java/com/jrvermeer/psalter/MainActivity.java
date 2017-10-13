@@ -204,22 +204,11 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         viewPager.setVisibility(View.VISIBLE);
         fab.setVisibility(View.VISIBLE);
     }
-
-    @OnLongClick(R.id.fab)
-    public boolean shuffle(){
-        if(service != null && service.shuffleAllAudio(viewPager.getCurrentItem() + 1)){
-            playerStarted();
-            Toast.makeText(this, "Shuffling", Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        return false;
-    }
-
+    //MediaCallbacks Interface
+    @Override
     public void playerStarted(){
         fab.setImageResource(R.drawable.ic_stop_white_24dp);
     }
-
-    //MediaCallbacks Interface
     @Override
     public void playerFinished() {
         fab.setImageResource(R.drawable.ic_play_arrow_white_24dp);
@@ -242,14 +231,14 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         if(service.isPlaying()){
             service.stopMedia();
         }
-        else {
-            if(service.playPsalterNumber(viewPager.getCurrentItem() + 1)) {
-                playerStarted();
-            }
-            else{
-                Toast.makeText(MainActivity.this, "Unable to play audio", Toast.LENGTH_SHORT).show();
-            }
-        }
+        else service.playPsalterNumber(viewPager.getCurrentItem() + 1);
+    }
+    @OnLongClick(R.id.fab)
+    public boolean shuffle(){
+        if(service == null) return false;
+
+        service.shuffleAllAudio(viewPager.getCurrentItem() + 1);
+        return true;
     }
 
     @OnItemClick(R.id.lvSearchResults)
@@ -280,5 +269,4 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         @Override
         public void onServiceDisconnected(ComponentName componentName) { }
     };
-    //SearchView.OnQueryTextListener svQueryListener =
 }
