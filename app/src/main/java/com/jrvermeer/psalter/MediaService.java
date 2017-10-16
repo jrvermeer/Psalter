@@ -162,8 +162,10 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         stopMedia(true);
     }
     private void stopMedia(boolean removeNotification){
-        if(mediaPlayer.isPlaying()) mediaPlayer.stop();
-        playbackStopped(removeNotification);
+        if(mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+            playbackStopped(removeNotification);
+        }
     }
 
     public boolean isPlaying(int number){
