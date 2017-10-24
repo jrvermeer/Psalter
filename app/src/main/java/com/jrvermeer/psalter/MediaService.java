@@ -22,6 +22,10 @@ import android.widget.Toast;
 import com.jrvermeer.psalter.Models.Psalter;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by Jonathan on 4/3/2017.
@@ -36,6 +40,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private MediaPlayer mediaPlayer = new MediaPlayer();
     private State mState = null;
     private Random rand = new Random();
+    private Lock lock = new ReentrantLock();
 
     private final int MS_BETWEEN_VERSES = 700;
     private final int NOTIFICATION_ID = 1234;
@@ -145,12 +150,16 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
+        lock.lock();
+        if(mState == null) return;
+
         if(!playNextVerse()){
             if(mState.isShuffling){
                 playRandomNumber();
             }
             else playbackStopped(true);
         }
+        lock.unlock();
     }
 
     private AssetFileDescriptor getAssetFileDescriptor(Psalter psalter) {
@@ -162,10 +171,12 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         stopMedia(true);
     }
     private void stopMedia(boolean removeNotification){
+        lock.lock();
         if(mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
-            playbackStopped(removeNotification);
         }
+        playbackStopped(removeNotification);
+        lock.unlock();
     }
 
     public boolean isPlaying(int number){
@@ -195,9 +206,6 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         if(i == AudioManager.AUDIOFOCUS_LOSS || i == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT){
             stopMedia(false);
         }
-        else if(i == AudioManager.AUDIOFOCUS_GAIN){
-            if(mState != null) playPsalter(mState);
-        }
     }
     private Notification getNotification() {
         Intent openActivity = new Intent(this, MainActivity.class);
@@ -207,7 +215,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         NotificationCompat.Builder builder = new NotificationCompat.Builder(MediaService.this);
         builder.setSmallIcon(R.drawable.ic_smallicon)
                 //.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
-                .setContentTitle(mState.psalter.getDisplayTitle())
+                .setContentTitle(getNotificationTitle(mState.psalter))
                 .setContentText(String.format("Verse %d of %d", mState.currentVerse, mState.psalter.getNumverses()))
                 .setSubText(mState.psalter.getDisplaySubtitle())
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -238,6 +246,9 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     }
 
     private Handler handler = new Handler();
+    private String getNotificationTitle(Psalter psalter){
+        return "#" + psalter.getNumber() + " - " + psalter.getHeading();
+    }
 
 
     public class MediaBinder extends Binder{

@@ -14,12 +14,22 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:id="@+id/tvPagerHeading"
+                    android:gravity="center_horizontal"
+                    android:textSize="18sp"
+                    android:textIsSelectable="true"
+                    android:textStyle="bold|italic"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:id="@+id/tvPagerPsalm"
                     android:gravity="center_horizontal"
-                    android:paddingBottom="4dp"
                     android:textSize="18sp"
                     android:textIsSelectable="true"
                     android:textColorLink="@color/colorAccent"/>
+
+
 
                 <TextView
                     android:id="@+id/tvPagerLyrics"

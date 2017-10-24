@@ -10,6 +10,14 @@ public class Psalter {
     private int psalm;
     private String lyrics;
     private int numverses;
+    private String heading;
+
+    public String getHeading() {
+        return heading;
+    }
+    public void setHeading(String heading) {
+        this.heading = heading;
+    }
 
     public int getNumber() {
         return number;
@@ -37,10 +45,6 @@ public class Psalter {
         this.numverses = numverses;
     }
 
-    public String getDisplayTitle(){
-        return "#" + number;
-    }
-
     public String getDisplaySubtitle(){
         if(psalm == 0){
             return "Lords Prayer";
@@ -52,7 +56,7 @@ public class Psalter {
         if(psalm == 0){ //Lords prayer
             passage = "Matthew+6:9-13";
         }
-        else passage = "Psalm+" + getPsalm();
+        else passage = "Psalm+" + psalm;
         return String.format("<a href=https://www.biblegateway.com/passage?search=%s>%s</a>", passage, getDisplaySubtitle());
     }
 

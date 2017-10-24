@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
-    @OnPageChange(R.id.viewpager)
+    @OnPageChange(value = R.id.viewpager)
     public void onPageSelected(int index) {
         if(service != null && !service.isPlaying(index + 1)) service.stopMedia();
     }

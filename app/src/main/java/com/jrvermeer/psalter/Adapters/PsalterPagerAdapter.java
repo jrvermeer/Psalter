@@ -36,6 +36,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
             LayoutInflater inflater = LayoutInflater.from(_context);
             ViewGroup layout = (ViewGroup)inflater.inflate(R.layout.psalter_layout, collection, false);
 
+            ((TextView)layout.findViewById(R.id.tvPagerHeading)).setText(psalter.getHeading());
             ((TextView)layout.findViewById(R.id.tvPagerLyrics)).setText(psalter.getLyrics());
             TextView tvPagerPsalm = ((TextView)layout.findViewById(R.id.tvPagerPsalm));
             tvPagerPsalm.setText(Html.fromHtml(psalter.getClickableLink()));
@@ -62,7 +63,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
     @Override
     public CharSequence getPageTitle(int position) {
         try{
-            return getPsalter(position).getDisplayTitle();
+            return "#" + getPsalter(position).getNumber();
         } catch (Exception ex){
             return "?";
         }

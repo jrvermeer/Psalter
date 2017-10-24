@@ -18,7 +18,7 @@ import java.util.ArrayList;
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 public class PsalterDb extends SQLiteAssetHelper {
-    private static final int DATABASE_VERSION = 7;
+    private static final int DATABASE_VERSION = 8;
     private static final String DATABASE_NAME = "psalter.sqlite";
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
@@ -42,7 +42,7 @@ public class PsalterDb extends SQLiteAssetHelper {
         try{
             SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
 
-            String[] columns = {"_id", "psalm", "lyrics", "numverses"};
+            String[] columns = {"_id", "psalm", "lyrics", "numverses", "heading"};
             String where = "_id = " + number;
             qb.setTables(TABLE_NAME);
             c = qb.query(db, columns, where, null, null, null, null);
@@ -52,6 +52,7 @@ public class PsalterDb extends SQLiteAssetHelper {
                 p.setPsalm(c.getInt(1));
                 p.setLyrics(c.getString(2));
                 p.setNumverses(c.getInt(3));
+                p.setHeading(c.getString(4));
                 return p;
             } else {
                 return null;
