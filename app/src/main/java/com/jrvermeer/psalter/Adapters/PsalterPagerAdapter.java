@@ -13,8 +13,6 @@ import com.jrvermeer.psalter.Models.Psalter;
 import com.jrvermeer.psalter.PsalterDb;
 import com.jrvermeer.psalter.R;
 
-import java.util.HashMap;
-
 /**
  * Created by Jonathan on 3/27/2017.
  */
@@ -39,7 +37,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
             ((TextView)layout.findViewById(R.id.tvPagerHeading)).setText(psalter.getHeading());
             ((TextView)layout.findViewById(R.id.tvPagerLyrics)).setText(psalter.getLyrics());
             TextView tvPagerPsalm = ((TextView)layout.findViewById(R.id.tvPagerPsalm));
-            tvPagerPsalm.setText(Html.fromHtml(psalter.getClickableLink()));
+            tvPagerPsalm.setText(Html.fromHtml(psalter.getSubtitleLink()));
             tvPagerPsalm.setMovementMethod(LinkMovementMethod.getInstance());
             collection.addView(layout);
             return layout;

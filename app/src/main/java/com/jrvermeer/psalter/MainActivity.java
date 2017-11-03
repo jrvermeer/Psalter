@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     protected void onDestroy() {
         // onSaveInstanceState is not called when using back button to close application
         saveState();
-        if(service != null && isFinishing()){
+        if(isFinishing() && service != null){
             service.stopMedia();
             getApplicationContext().unbindService(mConnection);
         }
@@ -171,7 +172,11 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             boolean nightmode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
             sPref.edit().putBoolean(getResources().getString(R.string.key_nightmode), nightmode).apply();
             item.setChecked(nightmode);
-            recreate();
+            if(Build.VERSION.SDK_INT == 23){ // framework bug in api 23 calling recreate inside onOptionsItemSelected.
+                finish();
+                startActivity(getIntent());
+            }
+            else recreate();
         }
         else if(id == R.id.action_random){
             int numberIndex = rand.nextInt(viewPager.getAdapter().getCount()); // random number between 0 and 433 (inclusive)
@@ -190,7 +195,8 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     private void goToPsalter(int psalterNumber){
-        searchMenuItem.collapseActionView();
+        if(searchMenuItem != null) searchMenuItem.collapseActionView();
+
         hideSearchResultsScreen();
         viewPager.setCurrentItem(psalterNumber - 1, true); //viewpager goes by index
     }
@@ -261,9 +267,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             service = ((MediaService.MediaBinder)iBinder).getServiceInstance();
             service.setCallbacks(MainActivity.this);
-            if(service.isPlaying()){
-                playerStarted();
-            }
         }
 
         @Override

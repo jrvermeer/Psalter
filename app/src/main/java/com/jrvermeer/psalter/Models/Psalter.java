@@ -45,19 +45,19 @@ public class Psalter {
         this.numverses = numverses;
     }
 
-    public String getDisplaySubtitle(){
+    public String getSubtitleText(){
         if(psalm == 0){
             return "Lords Prayer";
         } else return "Psalm " + psalm;
     }
 
-    public String getClickableLink(){
+    public String getSubtitleLink(){
         String passage;
         if(psalm == 0){ //Lords prayer
             passage = "Matthew+6:9-13";
         }
         else passage = "Psalm+" + psalm;
-        return String.format("<a href=https://www.biblegateway.com/passage?search=%s>%s</a>", passage, getDisplaySubtitle());
+        return String.format("<a href=https://www.biblegateway.com/passage?search=%s>%s</a>", passage, getSubtitleText());
     }
 
     public String getAudioFileName(){

@@ -22,8 +22,6 @@ import android.widget.Toast;
 import com.jrvermeer.psalter.Models.Psalter;
 
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -41,6 +39,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private State mState = null;
     private Random rand = new Random();
     private Lock lock = new ReentrantLock();
+    private BroadcastReceiver becomingNoisyReceiver;
 
     private final int MS_BETWEEN_VERSES = 700;
     private final int NOTIFICATION_ID = 1234;
@@ -53,14 +52,21 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     public void onCreate() {
         audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
         db = new PsalterDb(this);
-        registerReceiver(new BroadcastReceiver() {
+        becomingNoisyReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if(intent.getAction().equals(AudioManager.ACTION_AUDIO_BECOMING_NOISY)){
                     stopMedia(false);
                 }
             }
-        }, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
+        };
+        registerReceiver(becomingNoisyReceiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
+    }
+
+    @Override
+    public void onDestroy(){
+        unregisterReceiver(becomingNoisyReceiver);
+        mediaPlayer.release();
     }
 
     @Nullable
@@ -73,14 +79,14 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     public int onStartCommand(Intent intent, int flags, int startId) {
         if(intent != null ){
             int action = intent.getIntExtra(ACTION, -1);
-            if(action == ACTION_STOP && isPlaying()){
+            if(action == ACTION_STOP){
                 stopMedia(false);
             }
             else if(action == ACTION_NEXT){
                 playRandomNumber();
             }
-            else if(action == ACTION_PLAY && !isPlaying()){
-                if(mState != null) playPsalter(mState);
+            else if(action == ACTION_PLAY && mState != null){
+                playPsalter(mState);
             }
         }
         stopSelf();
@@ -89,6 +95,10 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
 
     public void setCallbacks(@NonNull final IMediaCallbacks callbacks){
         mediaCallbacks = callbacks;
+        if(isPlaying()){
+            mediaCallbacks.setCurrentNumber(mState.psalter.getNumber());
+            mediaCallbacks.playerStarted();
+        }
     }
 
     public void playPsalterNumber(int number){
@@ -172,10 +182,12 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     }
     private void stopMedia(boolean removeNotification){
         lock.lock();
-        if(mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
+        if(isPlaying()){
+            if(mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            playbackStopped(removeNotification);
         }
-        playbackStopped(removeNotification);
         lock.unlock();
     }
 
@@ -187,7 +199,6 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     }
 
     private void playbackStopped(boolean removeNotification){
-
         stopForeground(removeNotification);
         if(removeNotification) mState = null;
         else {
@@ -206,6 +217,12 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         if(i == AudioManager.AUDIOFOCUS_LOSS || i == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT){
             stopMedia(false);
         }
+        else if(i == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK){
+            mediaPlayer.setVolume(0.1f, 0.1f);
+        }
+        else if(i == AudioManager.AUDIOFOCUS_GAIN){
+            mediaPlayer.setVolume(1f, 1f);
+        }
     }
     private Notification getNotification() {
         Intent openActivity = new Intent(this, MainActivity.class);
@@ -217,14 +234,14 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                 //.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher))
                 .setContentTitle(getNotificationTitle(mState.psalter))
                 .setContentText(String.format("Verse %d of %d", mState.currentVerse, mState.psalter.getNumverses()))
-                .setSubText(mState.psalter.getDisplaySubtitle())
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setSubText(mState.psalter.getSubtitleText())
                 .setContentIntent(openActivityOnTouch)
                 .setShowWhen(false);
         if(isPlaying()){
             Intent stopPlayback = new Intent(this, MediaService.class).putExtra(ACTION, ACTION_STOP);
             PendingIntent stopPlaybackOnTouch = PendingIntent.getService(this, 1, stopPlayback, PendingIntent.FLAG_UPDATE_CURRENT);
-            builder.addAction(R.drawable.ic_stop_white_36dp, "Stop", stopPlaybackOnTouch);
+            builder.addAction(R.drawable.ic_stop_white_36dp, "Stop", stopPlaybackOnTouch)
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
         }
         else{
             Intent startPlayback = new Intent(this, MediaService.class).putExtra(ACTION, ACTION_PLAY);
