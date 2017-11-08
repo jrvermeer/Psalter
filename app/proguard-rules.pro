@@ -9,6 +9,9 @@
 
 # Add any project specific keep options here:
 -keep class android.support.v7.widget.SearchView { *; }
+-keep class android.support.v7.widget.Toolbar { *** mMenuView; }
+-keep class android.support.v7.widget.ActionMenuView { *** mPresenter; }
+-keep class android.support.v7.widget.ActionMenuPresenter { *** mOverflowButton; }
 
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
