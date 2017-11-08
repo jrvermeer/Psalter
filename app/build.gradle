@@ -7,8 +7,8 @@ android {
         applicationId "com.jrvermeer.psalter"
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 12
-        versionName "1.4.5"
+        versionCode 13
+        versionName "1.4.6"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -19,6 +19,10 @@ android {
     }
 }
 
+repositories {
+    jcenter()
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
@@ -26,6 +30,7 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:+'
+    compile 'com.getkeepsafe.taptargetview:taptargetview:1.10.0'
     compile 'com.android.support:design:25.3.1'
     compile 'com.jakewharton:butterknife:8.8.1'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'

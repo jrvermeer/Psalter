@@ -22,9 +22,13 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.getkeepsafe.taptargetview.TapTarget;
+import com.getkeepsafe.taptargetview.TapTargetSequence;
 import com.jrvermeer.psalter.Adapters.PsalterPagerAdapter;
 import com.jrvermeer.psalter.Adapters.PsalterSearchAdapter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import butterknife.BindView;
@@ -50,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
 
         // initialize theme (must do this before calling setContentView())
         sPref = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean nightMode = sPref.getBoolean(getResources().getString(R.string.key_nightmode), false);
+        boolean nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
         if(nightMode) setTheme(R.style.AppTheme_Dark);
         else setTheme(R.style.AppTheme_Light);
         setContentView(R.layout.activity_main);
@@ -62,12 +66,13 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this));
         viewPager.setAdapter(new PsalterPagerAdapter(this));
         viewPager.setOffscreenPageLimit(5);
-        int savedPageIndex = sPref.getInt(getResources().getString(R.string.key_lastindex), 0);
+        int savedPageIndex = sPref.getInt(getString(R.string.pref_lastindex), 0);
         viewPager.setCurrentItem(savedPageIndex);
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
         getApplicationContext().bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
+        appLaunched();
     }
 
     @Override
@@ -96,14 +101,14 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     private void saveState(){
-        sPref.edit().putInt(getResources().getString(R.string.key_lastindex), viewPager.getCurrentItem()).apply();
+        sPref.edit().putInt(getString(R.string.pref_lastindex), viewPager.getCurrentItem()).apply();
     }
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.menu_options, menu);
 
-        boolean nightMode = sPref.getBoolean(getResources().getString(R.string.key_nightmode), false);
+        boolean nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
         menu.findItem(R.id.action_nightmode).setChecked(nightMode);
 
         searchMenuItem = menu.findItem(R.id.action_search);
@@ -170,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         int id = item.getItemId();
         if(id == R.id.action_nightmode){
             boolean nightmode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
-            sPref.edit().putBoolean(getResources().getString(R.string.key_nightmode), nightmode).apply();
+            sPref.edit().putBoolean(getString(R.string.pref_nightmode), nightmode).apply();
             item.setChecked(nightmode);
             if(Build.VERSION.SDK_INT == 23){ // framework bug in api 23 calling recreate inside onOptionsItemSelected.
                 finish();
@@ -272,4 +277,33 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         @Override
         public void onServiceDisconnected(ComponentName componentName) { }
     };
+
+    public void appLaunched(){
+        List<TapTarget> tutorialTargets = getTutorialTargets();
+        if(tutorialTargets.size() > 0){
+            new TapTargetSequence(this)
+                    .targets(tutorialTargets)
+                    .continueOnCancel(true)
+                    .start();
+
+            allTutorialsShown();
+        }
+    }
+
+    public List<TapTarget> getTutorialTargets(){
+        List<TapTarget> targets = new ArrayList<>();
+        boolean fabLongPressTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fablongpress), false);
+
+        if(!fabLongPressTutorialShown){
+            targets.add(TapTarget.forToolbarOverflow(toolbar, "New! Shuffle Audio", "Numbers will continue playing at random in the background"));
+            targets.add(TapTarget.forView(fab, "Also start shuffling by pressing and holding the play button")
+                            .transparentTarget(true));
+        }
+        return  targets;
+    }
+    private void allTutorialsShown(){
+        sPref.edit()
+                .putBoolean(getString(R.string.pref_tutorialshown_fablongpress), true)
+                .apply();
+    }
 }

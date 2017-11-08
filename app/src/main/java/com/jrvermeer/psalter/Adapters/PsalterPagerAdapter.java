@@ -39,6 +39,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
             TextView tvPagerPsalm = ((TextView)layout.findViewById(R.id.tvPagerPsalm));
             tvPagerPsalm.setText(Html.fromHtml(psalter.getSubtitleLink()));
             tvPagerPsalm.setMovementMethod(LinkMovementMethod.getInstance());
+            tvPagerPsalm.setTag(psalter.getNumber());
             collection.addView(layout);
             return layout;
         } catch (Exception ex){

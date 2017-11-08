@@ -39,6 +39,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private State mState = null;
     private Random rand = new Random();
     private Lock lock = new ReentrantLock();
+    private Handler handler = new Handler();
     private BroadcastReceiver becomingNoisyReceiver;
 
     private final int MS_BETWEEN_VERSES = 700;
@@ -262,7 +263,6 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         return  builder.build();
     }
 
-    private Handler handler = new Handler();
     private String getNotificationTitle(Psalter psalter){
         return "#" + psalter.getNumber() + " - " + psalter.getHeading();
     }
