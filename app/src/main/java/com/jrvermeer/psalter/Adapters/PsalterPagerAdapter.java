@@ -20,6 +20,7 @@ import com.jrvermeer.psalter.R;
 public class PsalterPagerAdapter extends PagerAdapter {
     private Context _context;
     private PsalterDb db;
+    private Callbacks callbacks;
 
     public PsalterPagerAdapter(Context context){
         _context = context;
@@ -39,8 +40,9 @@ public class PsalterPagerAdapter extends PagerAdapter {
             TextView tvPagerPsalm = ((TextView)layout.findViewById(R.id.tvPagerPsalm));
             tvPagerPsalm.setText(Html.fromHtml(psalter.getSubtitleLink()));
             tvPagerPsalm.setMovementMethod(LinkMovementMethod.getInstance());
-            tvPagerPsalm.setTag(psalter.getNumber());
             collection.addView(layout);
+
+            if(callbacks != null) callbacks.pageCreated(layout, position);
             return layout;
         } catch (Exception ex){
             return null;
@@ -76,5 +78,13 @@ public class PsalterPagerAdapter extends PagerAdapter {
     @Override
     public boolean isViewFromObject(View view, Object object) {
         return view == object;
+    }
+
+    public void addCallbacks(Callbacks callbacks){
+        this.callbacks = callbacks;
+    }
+
+    public interface Callbacks{
+        void pageCreated(View page, int position);
     }
 }

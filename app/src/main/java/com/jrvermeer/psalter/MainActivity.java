@@ -64,15 +64,34 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         setSupportActionBar(toolbar);
 
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this));
-        viewPager.setAdapter(new PsalterPagerAdapter(this));
-        viewPager.setOffscreenPageLimit(5);
+        PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter((this));
+
+        pagerAdapter.addCallbacks(new PsalterPagerAdapter.Callbacks() {
+            @Override
+            public void pageCreated(View page, int position) {
+                if(position == viewPager.getCurrentItem()){
+                    showTutorialIfNeeded(page);
+                }
+            }
+        });
+        viewPager.setAdapter(pagerAdapter);
         int savedPageIndex = sPref.getInt(getString(R.string.pref_lastindex), 0);
         viewPager.setCurrentItem(savedPageIndex);
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
         getApplicationContext().bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
-        appLaunched();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // onSaveInstanceState is not called when using back button to close application
+        saveState();
+        if(isFinishing() && service != null){
+            service.stopMedia();
+            getApplicationContext().unbindService(mConnection);
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -87,17 +106,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     protected void onSaveInstanceState(Bundle outState) {
         saveState();
         super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    protected void onDestroy() {
-        // onSaveInstanceState is not called when using back button to close application
-        saveState();
-        if(isFinishing() && service != null){
-            service.stopMedia();
-            getApplicationContext().unbindService(mConnection);
-        }
-        super.onDestroy();
     }
 
     private void saveState(){
@@ -253,7 +261,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     @OnItemClick(R.id.lvSearchResults)
-    public void onItemClick(View view) {
+        public void onItemClick(View view) {
         try {
             TextView tvNumber = ((PsalterSearchAdapter.ViewHolder)view.getTag()).tvNumber;
             int num = Integer.parseInt(tvNumber.getText().toString());
@@ -278,9 +286,9 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         public void onServiceDisconnected(ComponentName componentName) { }
     };
 
-    public void appLaunched(){
-        List<TapTarget> tutorialTargets = getTutorialTargets();
-        if(tutorialTargets.size() > 0){
+    public void showTutorialIfNeeded(View selectedPage){
+        List<TapTarget> tutorialTargets = getTutorialTargets(selectedPage);
+        if(tutorialTargets != null && tutorialTargets.size() > 0){
             new TapTargetSequence(this)
                     .targets(tutorialTargets)
                     .continueOnCancel(true)
@@ -290,20 +298,29 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         }
     }
 
-    public List<TapTarget> getTutorialTargets(){
-        List<TapTarget> targets = new ArrayList<>();
-        boolean fabLongPressTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fablongpress), false);
+    public List<TapTarget> getTutorialTargets(View selectedPage){
 
+        boolean goToPsalmTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_gotopsalm), false);
+        boolean fabLongPressTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fablongpress), false);
+        if(goToPsalmTutorialShown && fabLongPressTutorialShown) return null;
+
+        List<TapTarget> targets = new ArrayList<>();
         if(!fabLongPressTutorialShown){
             targets.add(TapTarget.forToolbarOverflow(toolbar, "New! Shuffle Audio", "Numbers will continue playing at random in the background"));
             targets.add(TapTarget.forView(fab, "Also start shuffling by pressing and holding the play button")
-                            .transparentTarget(true));
+                    .transparentTarget(true));
         }
+
+        if(!goToPsalmTutorialShown && selectedPage != null){
+            targets.add(TapTarget.forView(selectedPage.findViewById(R.id.tvPagerPsalm), "Click this link to go to Psalm"));
+        }
+
         return  targets;
     }
     private void allTutorialsShown(){
         sPref.edit()
                 .putBoolean(getString(R.string.pref_tutorialshown_fablongpress), true)
+                .putBoolean(getString(R.string.pref_tutorialshown_gotopsalm), true)
                 .apply();
     }
 }
