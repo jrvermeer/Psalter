@@ -6,6 +6,7 @@
     <string name="pref_tutorialshown_fablongpress">pref_tutorialshown_fablongpress</string>
     <string name="action_nightmode">Night Mode</string>
     <string name="action_random">Random</string>
+    <string name="action_rate">Rate App</string>
     <string name="action_search">Search</string>
     <string name="action_shuffle">Shuffle Audio</string>
     <string name="search_hint">e.g. 427</string>

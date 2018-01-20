@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -196,6 +197,9 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             viewPager.setCurrentItem(numberIndex, true);
         }
         else if(id == R.id.action_shuffle) shuffle();
+        else if(id == R.id.action_rate){
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.jrvermeer.psalter")));
+        }
         else return false;
 
         return true;
