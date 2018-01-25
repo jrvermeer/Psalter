@@ -23,6 +23,8 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private final String TAG = "Psalter";
     private SharedPreferences sPref;
     private Random rand = new Random();
+
     @BindView(R.id.viewpager) ViewPager viewPager;
     @BindView(R.id.fab) FloatingActionButton fab;
     @BindView(R.id.lvSearchResults) ListView lvSearchResults;
@@ -85,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setAdapter(pagerAdapter);
         int savedPageIndex = sPref.getInt(getString(R.string.pref_lastindex), 0);
         viewPager.setCurrentItem(savedPageIndex);
+
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
@@ -253,13 +257,13 @@ public class MainActivity extends AppCompatActivity {
             mediaController.getTransportControls().stop();
         }
         else {
-            mediaController.getTransportControls().setShuffleModeEnabled(false);
+            mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_NONE);
             mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
         }
     }
     @OnLongClick(R.id.fab)
     public boolean shuffle(){
-        mediaController.getTransportControls().setShuffleModeEnabled(true);
+        mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
         mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
         return true;
     }
@@ -293,6 +297,8 @@ public class MainActivity extends AppCompatActivity {
             try{
                 mediaController = new MediaControllerCompat(MainActivity.this, ((MediaService.MediaBinder) iBinder).getSessionToken());
                 mediaController.registerCallback(callback);
+                //callback.onPlaybackStateChanged(mediaController.getPlaybackState());
+
                 Log.d(TAG, "MediaService connected");
             }
             catch (RemoteException ex){
