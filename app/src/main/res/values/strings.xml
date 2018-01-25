@@ -9,6 +9,7 @@
     <string name="action_rate">Rate App</string>
     <string name="action_search">Search</string>
     <string name="action_shuffle">Shuffle Audio</string>
+    <string name="action_sendfeedback">Send Feedback</string>
     <string name="search_hint">e.g. 427</string>
     <string name="title_activity_search">SearchActivity</string>
 

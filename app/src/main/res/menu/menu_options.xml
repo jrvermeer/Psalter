@@ -22,6 +22,10 @@
         android:orderInCategory="16"
         android:title="@string/action_rate"
         app:showAsAction="never" />
+    <item android:id="@+id/action_sendfeedback"
+        android:orderInCategory="17"
+        android:title="@string/action_sendfeedback"
+        app:showAsAction="never"/>
     <item
         android:id="@+id/action_nightmode"
         android:orderInCategory="100"

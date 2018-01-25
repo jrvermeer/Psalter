@@ -9,13 +9,18 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -39,8 +44,8 @@ import butterknife.OnItemClick;
 import butterknife.OnLongClick;
 import butterknife.OnPageChange;
 
-public class MainActivity extends AppCompatActivity implements MediaService.IMediaCallbacks {
-    private MediaService service;
+public class MainActivity extends AppCompatActivity {
+    private final String TAG = "Psalter";
     private SharedPreferences sPref;
     private Random rand = new Random();
     @BindView(R.id.viewpager) ViewPager viewPager;
@@ -48,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     @BindView(R.id.lvSearchResults) ListView lvSearchResults;
     @BindView(R.id.toolbar) Toolbar toolbar;
     MenuItem searchMenuItem;
+    MediaControllerCompat mediaController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +73,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this));
         PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter((this));
 
+        //need
         pagerAdapter.addCallbacks(new PsalterPagerAdapter.Callbacks() {
             @Override
             public void pageCreated(View page, int position) {
@@ -88,8 +95,8 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     protected void onDestroy() {
         // onSaveInstanceState is not called when using back button to close application
         saveState();
-        if(isFinishing() && service != null){
-            service.stopMedia();
+        if(isFinishing()){
+            mediaController.getTransportControls().stop();
             getApplicationContext().unbindService(mConnection);
         }
         super.onDestroy();
@@ -98,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     @Override
     public void onBackPressed(){
         if(lvSearchResults.getVisibility() == View.VISIBLE){
-            hideSearchResultsScreen();
+            collapseSearchView();
         }
         else super.onBackPressed();
     }
@@ -151,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
             public boolean onQueryTextSubmit(String query) {
                 try {
                     int number = Integer.parseInt(query);
+                    collapseSearchView();
                     goToPsalter(number);
                     return true;
                 } catch (NumberFormatException ex){
@@ -200,6 +208,17 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         else if(id == R.id.action_rate){
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.jrvermeer.psalter")));
         }
+        else if(id == R.id.action_sendfeedback){
+            Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+                    "mailto","jrvermeer.dev@gmail.com", null));
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Psalter App");
+            String body = "\n\n\n";
+            body += "---------------------------\n";
+            body += "App version: " + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")\n";
+            body += "Android version: " + Build.VERSION.RELEASE;
+            emailIntent.putExtra(Intent.EXTRA_TEXT, body);
+            startActivity(Intent.createChooser(emailIntent, "Send email..."));
+        }
         else return false;
 
         return true;
@@ -212,9 +231,6 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
 
     private void goToPsalter(int psalterNumber){
-        if(searchMenuItem != null) searchMenuItem.collapseActionView();
-
-        hideSearchResultsScreen();
         viewPager.setCurrentItem(psalterNumber - 1, true); //viewpager goes by index
     }
     private void showSearchResultsScreen(){
@@ -227,40 +243,24 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         viewPager.setVisibility(View.VISIBLE);
         fab.setVisibility(View.VISIBLE);
     }
-    //MediaCallbacks Interface
-    @Override
-    public void playerStarted(){
-        fab.setImageResource(R.drawable.ic_stop_white_24dp);
-    }
-    @Override
-    public void playerFinished() {
-        fab.setImageResource(R.drawable.ic_play_arrow_white_24dp);
-    }
-
-    @Override
-    public void setCurrentNumber(final int number){
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                goToPsalter(number);
-            }
-        });
+    private void collapseSearchView(){
+        if(searchMenuItem != null && searchMenuItem.isActionViewExpanded()) searchMenuItem.collapseActionView();
     }
 
     @OnClick(R.id.fab)
     public void fabClick() {
-        if(service == null) return;
-
-        if(service.isPlaying()){
-            service.stopMedia();
+        if(mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING){
+            mediaController.getTransportControls().stop();
         }
-        else service.playPsalterNumber(viewPager.getCurrentItem() + 1);
+        else {
+            mediaController.getTransportControls().setShuffleModeEnabled(false);
+            mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
+        }
     }
     @OnLongClick(R.id.fab)
     public boolean shuffle(){
-        if(service == null) return false;
-
-        service.shuffleAllAudio(viewPager.getCurrentItem() + 1);
+        mediaController.getTransportControls().setShuffleModeEnabled(true);
+        mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
         return true;
     }
 
@@ -269,6 +269,7 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
         try {
             TextView tvNumber = ((PsalterSearchAdapter.ViewHolder)view.getTag()).tvNumber;
             int num = Integer.parseInt(tvNumber.getText().toString());
+            collapseSearchView();
             goToPsalter(num);
 
         } catch (Exception ex) {
@@ -277,17 +278,46 @@ public class MainActivity extends AppCompatActivity implements MediaService.IMed
     }
     @OnPageChange(value = R.id.viewpager)
     public void onPageSelected(int index) {
-        if(service != null && !service.isPlaying(index + 1)) service.stopMedia();
+        if(mediaController != null && mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING
+                && !mediaController.getMetadata().getDescription().getMediaId().equals(String.valueOf(index + 1))){
+            mediaController.getTransportControls().stop();
+        }
+    }
+
+    private String getMediaId(){
+        return String.valueOf(viewPager.getCurrentItem() + 1);
     }
     ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            service = ((MediaService.MediaBinder)iBinder).getServiceInstance();
-            service.setCallbacks(MainActivity.this);
+            try{
+                mediaController = new MediaControllerCompat(MainActivity.this, ((MediaService.MediaBinder) iBinder).getSessionToken());
+                mediaController.registerCallback(callback);
+                Log.d(TAG, "MediaService connected");
+            }
+            catch (RemoteException ex){
+                Log.e(TAG, ex.toString());
+            }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) { }
+    };
+
+    MediaControllerCompat.Callback callback = new MediaControllerCompat.Callback() {
+        @Override
+        public void onPlaybackStateChanged(PlaybackStateCompat state) {
+            if(state.getState() == PlaybackStateCompat.STATE_PLAYING){
+                fab.setImageResource(R.drawable.ic_stop_white_24dp);
+            }
+            else fab.setImageResource(R.drawable.ic_play_arrow_white_24dp);
+        }
+
+        @Override
+        public void onMetadataChanged(MediaMetadataCompat metadata) {
+            int currentlyPlaying = Integer.parseInt(metadata.getDescription().getMediaId());
+            goToPsalter(currentlyPlaying);
+        }
     };
 
     public void showTutorialIfNeeded(View selectedPage){
