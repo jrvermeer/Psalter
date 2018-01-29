@@ -26,6 +26,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -321,8 +322,10 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onMetadataChanged(MediaMetadataCompat metadata) {
-            int currentlyPlaying = Integer.parseInt(metadata.getDescription().getMediaId());
-            goToPsalter(currentlyPlaying);
+            if(mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING){
+                int currentlyPlaying = Integer.parseInt(metadata.getDescription().getMediaId());
+                goToPsalter(currentlyPlaying);
+            }
         }
     };
 

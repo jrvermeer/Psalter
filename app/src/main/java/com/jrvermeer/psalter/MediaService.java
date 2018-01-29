@@ -220,8 +220,11 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
             controls.pause();
         }
         else if(i == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT){
-            resumePlaybackOnFocusGain = true;
-            controls.pause();
+            // having focus doesn't mean media is playing. only resume playback on focus regained if media was playing originally.
+            if(getPlaybackState() == PlaybackStateCompat.STATE_PLAYING){
+                resumePlaybackOnFocusGain = true;
+                controls.pause();
+            }
         }
         else if(i == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK){
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O) { //ducking is handled by the system in Oreo
@@ -234,6 +237,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
             }
             if(resumePlaybackOnFocusGain && getPlaybackState() != PlaybackStateCompat.STATE_PLAYING){
                 controls.play();
+                resumePlaybackOnFocusGain = false;
             }
         }
     }
@@ -325,6 +329,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
             if(mediaPlayer.isPlaying()) { //between verses this could be false
                 mediaPlayer.stop();
             }
+
             int state = getPlaybackState();
             if(state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_PAUSED){
                 playbackEnded();
