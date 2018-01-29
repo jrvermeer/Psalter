@@ -59,7 +59,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private static final int MS_BETWEEN_VERSES = 700;
     private static final int NOTIFICATION_ID = 1234;
     private static String NOTIFICATION_CHANNEL_ID = "DefaultChannel";
-    private static String NOTIFICATION_CHANNEL_NAME = "Default";
+    private static String NOTIFICATION_CHANNEL_NAME = "Playback Notification";
 
     private static final String ACTION_STOP = "ACTION_STOP";
     private static final String ACTION_NEXT = "ACTION_NEXT";
@@ -71,7 +71,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         notificationManager = NotificationManagerCompat.from(this);
         createNotificationChannel();
         db = new PsalterDb(this);
-
+        mediaPlayer.setOnCompletionListener(this);
         mediaSession = new MediaSessionCompat(this, "MediaService");
         mediaSession.setCallback(mMediaSessionCallback);
         mediaSession.setFlags( MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS );
@@ -120,7 +120,6 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                 AssetFileDescriptor afd = getAssetFileDescriptor(psalter);
                 mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
                 afd.close();
-                mediaPlayer.setOnCompletionListener(this);
                 mediaPlayer.prepare();
                 mediaPlayer.start();
                 updateMetaData();
@@ -266,6 +265,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
             builder.addAction(R.drawable.ic_play_arrow_white_36dp, "Play", startPlaybackOnTouch);
         }
         numActions++;
+
         if(mediaSession.getController().getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_ALL){ // todo: use transport actions
             Intent playNext = new Intent(this, MediaService.class).setAction(ACTION_NEXT);
             PendingIntent playNextOnTouch = PendingIntent.getService(this, 3, playNext, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -280,12 +280,26 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     }
 
     private void updatePlaybackState(int state){
+        long actions = PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID | PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH;
+        if(mediaSession.getController().getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_ALL){
+            actions = actions | PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
+        }
+        if(state == PlaybackStateCompat.STATE_PAUSED){
+            actions = actions
+                    | PlaybackStateCompat.ACTION_PLAY
+                    | PlaybackStateCompat.ACTION_STOP;
+        }
+        else if(state == PlaybackStateCompat.STATE_STOPPED){
+            actions = actions | PlaybackStateCompat.ACTION_PLAY;
+
+        }
+        else if(state == PlaybackStateCompat.STATE_PLAYING){
+            actions = PlaybackStateCompat.ACTION_PAUSE
+                    | PlaybackStateCompat.ACTION_STOP;
+        }
         mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                .setState(state, mediaPlayer.getCurrentPosition(), 1)
-                .setActions(PlaybackStateCompat.ACTION_PAUSE
-                        | PlaybackStateCompat.ACTION_STOP
-                        | PlaybackStateCompat.ACTION_PLAY
-                        | PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
+                .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1)
+                .setActions(actions)
                 .build());
     }
     private void updateMetaData(){
@@ -358,6 +372,14 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         @Override
         public void onPlayFromMediaId(String mediaId, Bundle extras) {
             playPsalter(db.getPsalter(Integer.valueOf(mediaId)), 1);
+        }
+
+        @Override
+        public void onPlayFromSearch(String query, Bundle extras) {
+            Psalter[] hits = db.searchPsalter(query);
+            if(hits.length > 0){
+                playPsalter(hits[0], 1);
+            }
         }
 
         @Override
