@@ -294,7 +294,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
 
         }
         else if(state == PlaybackStateCompat.STATE_PLAYING){
-            actions = PlaybackStateCompat.ACTION_PAUSE
+            actions = actions | PlaybackStateCompat.ACTION_PAUSE
                     | PlaybackStateCompat.ACTION_STOP;
         }
         mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
