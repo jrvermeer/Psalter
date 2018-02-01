@@ -169,7 +169,6 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     }
 
     private void playbackEnded(){
-        stopForeground(false);
         unregisterReceiver(becomingNoisyReceiver);
         updatePlaybackState(PlaybackStateCompat.STATE_STOPPED);
         currentVerse = 1;
@@ -311,6 +310,9 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                 .build());
     }
     private void updateNotification(){
+        if(getPlaybackState() != PlaybackStateCompat.STATE_PLAYING){
+            stopForeground(false);
+        }
         notificationManager.notify(NOTIFICATION_ID, getNotification());
     }
 

@@ -298,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
             try{
                 mediaController = new MediaControllerCompat(MainActivity.this, ((MediaService.MediaBinder) iBinder).getSessionToken());
                 mediaController.registerCallback(callback);
-                //callback.onPlaybackStateChanged(mediaController.getPlaybackState());
+                callback.onPlaybackStateChanged(mediaController.getPlaybackState());
 
                 Log.d(TAG, "MediaService connected");
             }
@@ -342,7 +342,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public List<TapTarget> getTutorialTargets(View selectedPage){
-
         boolean goToPsalmTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_gotopsalm), false);
         boolean fabLongPressTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fablongpress), false);
         if(goToPsalmTutorialShown && fabLongPressTutorialShown) return null;
