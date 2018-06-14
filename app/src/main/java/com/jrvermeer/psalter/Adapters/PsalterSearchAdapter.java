@@ -58,6 +58,10 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
             showResults(db.searchPsalter(query));
         }
     }
+    public void getAllFromPsalm(int psalm){
+        showResults(db.getPsalm(psalm));
+        psalmSearch = true;
+    }
     private void showResults(Psalter[] results){
         clear();
         addAll(results);

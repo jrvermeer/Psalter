@@ -20,14 +20,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.View;
-import android.widget.LinearLayout;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -47,7 +47,7 @@ import butterknife.OnItemClick;
 import butterknife.OnLongClick;
 import butterknife.OnPageChange;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener{
     private final String TAG = "Psalter";
     private SharedPreferences sPref;
     private Random rand = new Random();
@@ -56,8 +56,18 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.fab) FloatingActionButton fab;
     @BindView(R.id.lvSearchResults) ListView lvSearchResults;
     @BindView(R.id.toolbar) Toolbar toolbar;
+    @BindView(R.id.tableButtons) TableLayout tableButtons;
+    @BindView(R.id.searchBtn_Lyrics) Button  searchBtn_Lyrics;
+    @BindView(R.id.searchBtn_Psalm) Button searchBtn_Psalm;
+    @BindView(R.id.searchBtn_Psalter) Button searchBtn_Psalter;
     MenuItem searchMenuItem;
     MediaControllerCompat mediaController;
+    SearchView searchView;
+
+    private static final int SEARCH_MODE_PSALTER = 256;
+    private static final int SEARCH_MODE_PSALM = 257;
+    private static final int SEARCH_MODE_lYRICS = 258;
+    private int SEARCH_MODE = SEARCH_MODE_PSALTER;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,63 +143,74 @@ public class MainActivity extends AppCompatActivity {
         menu.findItem(R.id.action_nightmode).setChecked(nightMode);
 
         searchMenuItem = menu.findItem(R.id.action_search);
-        final SearchView searchView = (SearchView)searchMenuItem.getActionView();
+        searchView = (SearchView)searchMenuItem.getActionView();
+        searchView.setOnQueryTextListener(this);
 
-        final String[] hints = getResources().getStringArray(R.array.search_hints);
-        final Handler handler = new Handler();
-        final Runnable loopHints = new Runnable() {
-            private int iteration = 0;
-            @Override
-            public void run() {
-                searchView.setQueryHint(hints[iteration++ % hints.length]);
-                handler.postDelayed(this, 2000);
-            }
-        };
         MenuItemCompat.setOnActionExpandListener(searchMenuItem, new MenuItemCompat.OnActionExpandListener() {
             @Override
             public boolean onMenuItemActionExpand(MenuItem item) {
-                handler.post(loopHints);
+                showSearchButtons();
                 return true;
             }
             @Override
             public boolean onMenuItemActionCollapse(MenuItem item) {
-                handler.removeCallbacks(loopHints);
                 hideSearchResultsScreen();
+                hideSearchButtons();
                 return true;
             }
         });
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                try {
-                    int number = Integer.parseInt(query);
+
+        return true;
+    }
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        if(SEARCH_MODE == SEARCH_MODE_lYRICS){
+            performStringSearch(query);
+        }
+        else {
+            try {
+                int number = Integer.parseInt(query);
+                if(SEARCH_MODE == SEARCH_MODE_PSALTER){
                     collapseSearchView();
                     goToPsalter(number);
-                    return true;
-                } catch (NumberFormatException ex){
-                    stringSearch(query);
-                    return true;
                 }
-                finally {
-                    searchView.clearFocus();
+                else if (SEARCH_MODE == SEARCH_MODE_PSALM && 1 <= number && number <= 150){
+                    performPsalmSearch(number);
                 }
+                else return false;
+
+            } catch (NumberFormatException ex){
+                return false;
             }
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                try{
-                    Integer.parseInt(newText);
-                    return false;
-                }
-                catch (NumberFormatException ex){
-                    if(newText.length() > 2){
-                        stringSearch(newText);
-                        return true;
-                    }
-                    return  false;
-                }
-            }
-        });
+        }
+        searchView.clearFocus();
         return true;
+    }
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        if(SEARCH_MODE == SEARCH_MODE_lYRICS && newText.length() > 1){
+            performStringSearch(newText);
+            return true;
+        }
+        return false;
+    }
+    @OnClick(R.id.searchBtn_Psalm)
+    public void searchPsalm(){
+        searchView.setInputType(InputType.TYPE_CLASS_NUMBER);
+        searchView.setQueryHint("Enter Psalm (1 - 150)");
+        SEARCH_MODE = SEARCH_MODE_PSALM;
+    }
+    @OnClick(R.id.searchBtn_Lyrics)
+    public void searchLyrics() {
+        searchView.setInputType(InputType.TYPE_CLASS_TEXT);
+        searchView.setQueryHint("Enter search query");
+        SEARCH_MODE = SEARCH_MODE_lYRICS;
+    }
+    @OnClick(R.id.searchBtn_Psalter)
+    public void searchPsalter(){
+        searchView.setInputType(InputType.TYPE_CLASS_NUMBER);
+        searchView.setQueryHint("Enter Psalter number (1 - 434)");
+        SEARCH_MODE = SEARCH_MODE_PSALTER;
     }
 
     @Override
@@ -229,9 +250,14 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    private void stringSearch(String query){
+    private void performStringSearch(String query){
         showSearchResultsScreen();
         ((PsalterSearchAdapter)lvSearchResults.getAdapter()).queryPsalter(query);
+        lvSearchResults.setSelectionAfterHeaderView();
+    }
+    private void performPsalmSearch(int psalm){
+        showSearchResultsScreen();
+        ((PsalterSearchAdapter)lvSearchResults.getAdapter()).getAllFromPsalm(psalm);
         lvSearchResults.setSelectionAfterHeaderView();
     }
 
@@ -250,6 +276,14 @@ public class MainActivity extends AppCompatActivity {
     }
     private void collapseSearchView(){
         if(searchMenuItem != null && searchMenuItem.isActionViewExpanded()) searchMenuItem.collapseActionView();
+    }
+    private void showSearchButtons(){
+        tableButtons.setVisibility(View.VISIBLE);
+        fab.setVisibility(View.GONE);
+    }
+    private void hideSearchButtons(){
+        tableButtons.setVisibility(View.GONE);
+        fab.setVisibility(View.VISIBLE);
     }
 
     @OnClick(R.id.fab)

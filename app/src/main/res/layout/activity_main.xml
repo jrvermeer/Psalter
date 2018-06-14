@@ -1,39 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:keepScreenOn="true">
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         tools:context="com.jrvermeer.psalter.MainActivity">
 
-        <include layout="@layout/toolbar"
-            android:id="@+id/toolbar"></include>
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/toolbar"></include>
 
         <ListView
+            android:id="@+id/lvSearchResults"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_below="@id/toolbar"
-            android:id="@+id/lvSearchResults"
             android:orientation="vertical"
-            android:visibility="gone"></ListView>
+            android:visibility="gone">
+
+        </ListView>
 
         <android.support.v4.view.ViewPager
             android:id="@+id/viewpager"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/toolbar">
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
             <android.support.v4.view.PagerTitleStrip
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/PagerTitleStrip">
-            </android.support.v4.view.PagerTitleStrip>
-
+                android:textAppearance="@style/PagerTitleStrip"></android.support.v4.view.PagerTitleStrip>
         </android.support.v4.view.ViewPager>
+
+        <TableLayout
+            android:id="@+id/tableButtons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stretchColumns="*"
+            android:visibility="gone">
+
+            <TableRow android:gravity="center" >
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/searchBtn_Psalter"
+                    android:text="Psalter #" />
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/searchBtn_Psalm"
+                    android:text="Psalm #" />
+
+                <android.support.v7.widget.AppCompatButton
+                    android:id="@+id/searchBtn_Lyrics"
+                    android:text="Lyrics" />
+
+            </TableRow>
+        </TableLayout>
     </LinearLayout>
 
     <android.support.design.widget.FloatingActionButton
