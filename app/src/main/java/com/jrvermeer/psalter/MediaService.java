@@ -251,6 +251,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                 .setContentText(metadata.getString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION))
                 .setSubText(metadata.getString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE))
                 .setContentIntent(openActivityOnTouch)
+                .setColor(getResources().getColor(R.color.colorAccent))
                 .setShowWhen(false);
         if(getPlaybackState() == PlaybackStateCompat.STATE_PLAYING){
             Intent stopPlayback = new Intent(this, MediaService.class).setAction(ACTION_STOP);

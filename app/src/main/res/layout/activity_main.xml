@@ -9,7 +9,7 @@
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         tools:context="com.jrvermeer.psalter.MainActivity">
 
@@ -22,6 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_below="@id/toolbar"
+            android:layout_weight="1"
             android:orientation="vertical"
             android:visibility="gone">
 
@@ -50,15 +51,18 @@
 
                 <android.support.v7.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalter"
-                    android:text="Psalter #" />
+                    android:text="Psalter #"
+                    android:theme="?attr/buttonStyle"/>
 
                 <android.support.v7.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalm"
-                    android:text="Psalm #" />
+                    android:text="Psalm #"
+                    android:theme="?attr/buttonStyle"/>
 
                 <android.support.v7.widget.AppCompatButton
                     android:id="@+id/searchBtn_Lyrics"
-                    android:text="Lyrics" />
+                    android:text="Lyrics"
+                    android:theme="?attr/buttonStyle"/>
 
             </TableRow>
         </TableLayout>

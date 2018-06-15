@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -22,6 +23,7 @@ import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -159,7 +161,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 return true;
             }
         });
-
+        searchPsalter();
         return true;
     }
     @Override
@@ -199,18 +201,48 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         searchView.setInputType(InputType.TYPE_CLASS_NUMBER);
         searchView.setQueryHint("Enter Psalm (1 - 150)");
         SEARCH_MODE = SEARCH_MODE_PSALM;
+        if(Build.VERSION.SDK_INT < 23){
+            searchBtn_Psalter.setTextAppearance(this, R.style.Button);
+            searchBtn_Psalm.setTextAppearance(this, R.style.Button_Selected);
+            searchBtn_Lyrics.setTextAppearance(this, R.style.Button);
+        }
+        else{
+            searchBtn_Psalter.setTextAppearance(R.style.Button);
+            searchBtn_Psalm.setTextAppearance(R.style.Button_Selected);
+            searchBtn_Lyrics.setTextAppearance(R.style.Button);
+        }
     }
     @OnClick(R.id.searchBtn_Lyrics)
     public void searchLyrics() {
         searchView.setInputType(InputType.TYPE_CLASS_TEXT);
         searchView.setQueryHint("Enter search query");
         SEARCH_MODE = SEARCH_MODE_lYRICS;
+        if(Build.VERSION.SDK_INT < 23){
+            searchBtn_Psalter.setTextAppearance(this, R.style.Button);
+            searchBtn_Psalm.setTextAppearance(this, R.style.Button);
+            searchBtn_Lyrics.setTextAppearance(this, R.style.Button_Selected);
+        }
+        else {
+            searchBtn_Psalter.setTextAppearance(R.style.Button);
+            searchBtn_Psalm.setTextAppearance(R.style.Button);
+            searchBtn_Lyrics.setTextAppearance(R.style.Button_Selected);
+        }
     }
     @OnClick(R.id.searchBtn_Psalter)
     public void searchPsalter(){
         searchView.setInputType(InputType.TYPE_CLASS_NUMBER);
         searchView.setQueryHint("Enter Psalter number (1 - 434)");
         SEARCH_MODE = SEARCH_MODE_PSALTER;
+        if(Build.VERSION.SDK_INT < 23){
+            searchBtn_Psalter.setTextAppearance(this, R.style.Button_Selected);
+            searchBtn_Psalm.setTextAppearance(this, R.style.Button);
+            searchBtn_Lyrics.setTextAppearance(this, R.style.Button);
+        }
+        else{
+            searchBtn_Psalter.setTextAppearance(R.style.Button_Selected);
+            searchBtn_Psalm.setTextAppearance(R.style.Button);
+            searchBtn_Lyrics.setTextAppearance(R.style.Button);
+        }
     }
 
     @Override

@@ -12,6 +12,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowBackground">@color/colorBackground</item>
         <item name="toolbarStyle">@style/Toolbar</item>
+        <item name="buttonStyle">@style/Button</item>
     </style>
     .
 
@@ -30,6 +31,14 @@
         <item name="android:textStyle">bold</item>
     </style>
 
+    <style name="Button" parent="@style/Widget.AppCompat.Button.Borderless">
+        <item name="android:textColor">@color/colorLightText</item>
+    </style>
+
+    <style name="Button.Selected">
+        <item name="android:textColor">@color/colorAccent</item>
+    </style>
+
     <!-- Light application theme. -->
     <style name="AppTheme.Light">
         <item name="colorPrimary">@color/colorPrimary</item>
@@ -37,8 +46,8 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowBackground">@color/colorBackground</item>
         <item name="toolbarStyle">@style/Toolbar.Light</item>
+        <!--<item name="buttonStyle">@style/Button.Light</item>-->
     </style>
-    .
 
     <style name="Toolbar.Light">
         <item name="android:background">@color/colorPrimary</item>
@@ -51,6 +60,10 @@
         <item name="colorControlNormal">@android:color/black</item>
     </style>
 
+    <!--<style name="Button.Light">-->
+        <!--<item name="android:textColor">@color/colorAccent</item>-->
+    <!--</style>-->
+
     <!-- Dark application theme. -->
     <style name="AppTheme.Dark">
         <item name="colorPrimary">@color/colorPrimaryInverse</item>
@@ -58,6 +71,7 @@
         <item name="colorAccent">@color/colorAccentInverse</item>
         <item name="android:windowBackground">@android:color/black</item>
         <item name="toolbarStyle">@style/Toolbar.Dark</item>
+        <!--<item name="buttonStyle">@style/Button.Dark</item>-->
 
         <item name="android:textColor">@color/colorLightText</item>
         <item name="android:textColorPrimary">#fff</item>
@@ -75,6 +89,11 @@
         <item name="android:textColor">@android:color/white</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
+
+    <!--<style name="Button.Dark">-->
+        <!--<item name="android:textColor">@color/colorLightText</item>-->
+
+    <!--</style>-->
 
     <style name="AppTheme.Light.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 

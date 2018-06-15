@@ -11,5 +11,5 @@
     <color name="colorPrimaryDarkInverse">#212121</color>
     <color name="colorAccentInverse">@color/colorPrimaryInverse</color>
     <color name="colorBackgroundInverse">@android:color/black</color>
-    <color name="colorLightText">#a8ffffff</color>
+    <color name="colorLightText">#bdbdbd</color>
 </resources>
