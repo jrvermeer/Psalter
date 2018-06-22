@@ -2,25 +2,37 @@
     <string name="app_name">Psalter</string>
     <string name="pref_nightmode">key_nightmode</string>
     <string name="pref_lastindex">key_lastindex</string>
+
     <string name="pref_tutorialshown_gotopsalm">pref_tutorialshown_gotopsalm</string>
     <string name="pref_tutorialshown_fablongpress">pref_tutorialshown_fablongpress</string>
+    <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore</string>
+    <string name="pref_tutorialshown_fabreminder">pref_tutorialshown_fabreminder</string>
+
     <string name="action_nightmode">Night Mode</string>
     <string name="action_random">Random</string>
     <string name="action_rate">Rate App</string>
     <string name="action_search">Search</string>
     <string name="action_shuffle">Shuffle Audio</string>
     <string name="action_sendfeedback">Send Feedback</string>
-    <string name="search_hint">e.g. 427</string>
-    <string name="title_activity_search">SearchActivity</string>
 
-    <string-array name="search_hints">
-        <item>e.g. 367</item>
-        <item>e.g. Let us sing psalms</item>
-        <item>e.g. The Lord\'s my Shepherd</item>
-        <item>e.g. Psalm 23</item>
-        <item>e.g. 27</item>
-        <item>e.g. Psalm 119</item>
-        <item>e.g. O Sing ye Hallelujah</item>
-        <item>e.g. 89</item>
+
+    <string name="tutorial_fabreminder_title">You may have forgotten...</string>
+    <string name="tutorial_fabreminder_description">You can start shuffling by pressing and holding the play button. It really is more convenient.</string>
+
+    <string name="tutorial_fab_title">Press this button to play song</string>
+    <string name="tutorial_fab_description">Press and hold to continue playing random numbers. Makes for fantastic background music!</string>
+
+    <string name="tutorial_gotopsalm_title">Click this link to go to Psalm</string>
+    <string name="tutorial_gotopsalm_description">The chapter will open in your default browser</string>
+
+    <string name="tutorial_showscore_title">Press this button to show music score</string>
+    <string name="tutorial_showscore_description">It even works well with night mode!</string>
+
+    <string-array name="search_ignore_strings">
+        <item>\'</item>
+        <item>\"</item>
+        <item>,</item>
+        <item>:</item>
+        <item>;</item>
     </string-array>
 </resources>
