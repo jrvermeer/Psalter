@@ -9,7 +9,9 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PersistableBundle;
 import android.os.RemoteException;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -25,6 +27,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TableLayout;
@@ -39,6 +42,7 @@ import com.getkeepsafe.taptargetview.TapTargetView;
 import com.jrvermeer.psalter.BuildConfig;
 import com.jrvermeer.psalter.Core.Contracts.IPagerCallbacks;
 import com.jrvermeer.psalter.Core.Models.Psalter;
+import com.jrvermeer.psalter.Infrastructure.Tutorials;
 import com.jrvermeer.psalter.R;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
 import com.jrvermeer.psalter.Infrastructure.MediaService;
@@ -61,6 +65,7 @@ public class MainActivity extends AppCompatActivity
     private final String TAG = "Psalter";
     private SharedPreferences sPref;
     private IPsalterRepository psalterRepository;
+    Tutorials tutorials;
 
     @BindView(R.id.viewpager) ViewPager viewPager;
     @BindView(R.id.fab) FloatingActionButton fab;
@@ -95,6 +100,11 @@ public class MainActivity extends AppCompatActivity
 
         psalterRepository = new PsalterDb(this);
 
+        //initialize viewpager
+        PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter(this, psalterRepository,this, false, nightMode);
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(sPref.getInt(getString(R.string.pref_lastindex), 0));
+
         //initialize bottom nav
         AHBottomNavigationItem bottomNav_noScore = new AHBottomNavigationItem("", R.drawable.ic_no_score);
         AHBottomNavigationItem bottomNav_score = new AHBottomNavigationItem("", R.drawable.ic_score);
@@ -104,17 +114,32 @@ public class MainActivity extends AppCompatActivity
         bottomNavigation.setDefaultBackgroundColor(getResources().getColor(R.color.colorPrimaryInverse));
         bottomNavigation.setAccentColor(Color.WHITE);
         bottomNavigation.setOnTabSelectedListener(this);
+        bottomNavigation.setCurrentItem(sPref.getInt(getString(R.string.pref_bottomnav), 0), true);
 
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, psalterRepository));
-        PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter(this, psalterRepository,this, false, nightMode);
-
-        viewPager.setAdapter(pagerAdapter);
-        int savedPageIndex = sPref.getInt(getString(R.string.pref_lastindex), 0);
-        viewPager.setCurrentItem(savedPageIndex);
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
         getApplicationContext().bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
+
+        tutorials = new Tutorials(this);
+        tutorials.showTutorial(fab,
+                R.string.pref_tutorialshown_fablongpress,
+                R.string.tutorial_fab_title,
+                R.string.tutorial_fab_description, true);
+
+        //bottomNavigation adds child views extremely late, meaning it's difficult to get a reference to the view.
+        // Use this to tap into after that event
+        bottomNavigation.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                tutorials.showTutorial(bottomNavigation.getViewAtPosition(1),
+                        R.string.pref_tutorialshown_showscore,
+                        R.string.tutorial_showscore_title,
+                        R.string.tutorial_showscore_description);
+                bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            }
+        });
     }
 
     @Override
@@ -143,8 +168,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void saveState(){
-        sPref.edit().putInt(getString(R.string.pref_lastindex), viewPager.getCurrentItem()).apply();
-        //todo: save selected bottom nav item
+        sPref.edit()
+                .putInt(getString(R.string.pref_lastindex), viewPager.getCurrentItem())
+                .putInt(getString(R.string.pref_bottomnav), bottomNavigation.getCurrentItem())
+                .apply();
     }
 
     @Override
@@ -177,8 +204,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onTabSelected(int position, boolean wasSelected) {
-        //boolean nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
-        //viewPager.setAdapter(new PsalterPagerAdapter(this, psalterRepository, position == 1, nightMode));
         PsalterPagerAdapter adapter = (PsalterPagerAdapter)viewPager.getAdapter();
         if(position == 1) adapter.showScore();
         else adapter.hideScore();
@@ -294,8 +319,11 @@ public class MainActivity extends AppCompatActivity
 
         }
         else if(id == R.id.action_shuffle) {
+            tutorials.showTutorial(fab, R.string.pref_tutorialshown_fabreminder,
+                    R.string.tutorial_fabreminder_title,
+                    R.string.tutorial_fabreminder_description,
+                    true);
             shuffle();
-            showFabReminderTutorial();
         }
         else if(id == R.id.action_rate){
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.jrvermeer.psalter")));
@@ -388,7 +416,11 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void pageCreated(View page, int position) {
         if(position == viewPager.getCurrentItem()){
-            showTutorialsOnStart(page.findViewById(R.id.tvPagerPsalm), bottomNavigation.getViewAtPosition(1));
+            tutorials.showTutorial(page.findViewById(R.id.tvPagerPsalm),
+                    R.string.pref_tutorialshown_gotopsalm,
+                    R.string.tutorial_gotopsalm_title,
+                    R.string.tutorial_gotopsalm_description);
+            //showTutorialsOnStart(page.findViewById(R.id.tvPagerPsalm), bottomNavigation.getViewAtPosition(1));
         }
     }
 
@@ -440,55 +472,55 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
-    public void showFabReminderTutorial(){
-        boolean tutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fabreminder), false);
-        if(!tutorialShown){
-            TapTargetView.showFor(this, TapTarget.forView(fab,
-                    getString(R.string.tutorial_fabreminder_title),
-                    getString(R.string.tutorial_fabreminder_description)).transparentTarget(true));
-            sPref.edit().putBoolean(getString(R.string.pref_tutorialshown_fabreminder), true).apply();
-        }
-    }
-    public void showTutorialsOnStart(View psalmLink, View scoreButton){
-        List<TapTarget> tutorialTargets = getStartTutorialTargets(psalmLink, scoreButton);
-        if(tutorialTargets != null && tutorialTargets.size() > 0){
-            new TapTargetSequence(this)
-                    .targets(tutorialTargets)
-                    .continueOnCancel(true)
-                    .start();
-
-            startTutorialsShown();
-        }
-    }
-    public List<TapTarget> getStartTutorialTargets(View psalmLink, View scoreButton){
-        boolean goToPsalmTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_gotopsalm), false);
-        boolean fabLongPressTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fablongpress), false);
-        boolean showScoreTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_showscore), false);
-
-        List<TapTarget> targets = new ArrayList<>();
-        if(!fabLongPressTutorialShown){
-            targets.add(TapTarget.forView(fab,
-                    getString(R.string.tutorial_fab_title),
-                    getString(R.string.tutorial_fab_description))
-                    .transparentTarget(true));
-        }
-        if(!goToPsalmTutorialShown && psalmLink != null){
-            targets.add(TapTarget.forView(psalmLink.findViewById(R.id.tvPagerPsalm),
-                    getString(R.string.tutorial_gotopsalm_title),
-                    getString(R.string.tutorial_gotopsalm_description)));
-        }
-        if(!showScoreTutorialShown && scoreButton != null){
-            targets.add(TapTarget.forView(scoreButton,
-                    getString(R.string.tutorial_showscore_title),
-                    getString(R.string.tutorial_showscore_description)));
-        }
-        return  targets;
-    }
-    private void startTutorialsShown(){
-        sPref.edit()
-                .putBoolean(getString(R.string.pref_tutorialshown_fablongpress), true)
-                .putBoolean(getString(R.string.pref_tutorialshown_gotopsalm), true)
-                .putBoolean(getString(R.string.pref_tutorialshown_showscore), true)
-                .apply();
-    }
+//    public void showFabReminderTutorial(){
+//        boolean tutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fabreminder), false);
+//        if(!tutorialShown){
+//            TapTargetView.showFor(this, TapTarget.forView(fab,
+//                    getString(R.string.tutorial_fabreminder_title),
+//                    getString(R.string.tutorial_fabreminder_description)).transparentTarget(true));
+//            sPref.edit().putBoolean(getString(R.string.pref_tutorialshown_fabreminder), true).apply();
+//        }
+//    }
+//    public void showTutorialsOnStart(View psalmLink, View scoreButton){
+//        List<TapTarget> tutorialTargets = getStartTutorialTargets(psalmLink, scoreButton);
+//        if(tutorialTargets != null && tutorialTargets.size() > 0){
+//            new TapTargetSequence(this)
+//                    .targets(tutorialTargets)
+//                    .continueOnCancel(true)
+//                    .start();
+//
+//            startTutorialsShown();
+//        }
+//    }
+//    public List<TapTarget> getStartTutorialTargets(View psalmLink, View scoreButton){
+//        boolean goToPsalmTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_gotopsalm), false);
+//        boolean fabLongPressTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fablongpress), false);
+//        boolean showScoreTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_showscore), false);
+//
+//        List<TapTarget> targets = new ArrayList<>();
+//        if(!fabLongPressTutorialShown){
+//            targets.add(TapTarget.forView(fab,
+//                    getString(R.string.tutorial_fab_title),
+//                    getString(R.string.tutorial_fab_description))
+//                    .transparentTarget(true));
+//        }
+//        if(!goToPsalmTutorialShown && psalmLink != null){
+//            targets.add(TapTarget.forView(psalmLink.findViewById(R.id.tvPagerPsalm),
+//                    getString(R.string.tutorial_gotopsalm_title),
+//                    getString(R.string.tutorial_gotopsalm_description)));
+//        }
+//        if(!showScoreTutorialShown && scoreButton != null){
+//            targets.add(TapTarget.forView(scoreButton,
+//                    getString(R.string.tutorial_showscore_title),
+//                    getString(R.string.tutorial_showscore_description)));
+//        }
+//        return  targets;
+//    }
+//    private void startTutorialsShown(){
+//        sPref.edit()
+//                .putBoolean(getString(R.string.pref_tutorialshown_fablongpress), true)
+//                .putBoolean(getString(R.string.pref_tutorialshown_gotopsalm), true)
+//                .putBoolean(getString(R.string.pref_tutorialshown_showscore), true)
+//                .apply();
+//    }
 }
