@@ -1,7 +1,6 @@
 package com.jrvermeer.psalter.Infrastructure;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.support.annotation.StringRes;
 import android.view.View;
@@ -36,7 +35,7 @@ public class Tutorials implements TapTargetSequence.Listener {
         showTutorial(view, prefTutorialShown, title, description, false);
     }
     public void showTutorial(View view, @StringRes int prefTutorialShown, @StringRes int title, @StringRes int description, boolean transparent){
-        boolean shown = pref.getBoolean(context.getResources().getString(prefTutorialShown), false);
+        boolean shown = pref.getBoolean(context.getString(prefTutorialShown), false);
         if(!shown && view != null){
             if(targetSequence == null) targetSequence = getTargetSequence();
             targetSequence.target(TapTarget.forView(view,

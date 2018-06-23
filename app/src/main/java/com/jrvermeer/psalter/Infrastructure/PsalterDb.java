@@ -6,18 +6,15 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.DrawableWrapper;
 import android.os.Environment;
-import android.support.v7.widget.DrawableUtils;
 import android.widget.Toast;
 
 import com.android.vending.expansion.zipfile.APKExpansionSupport;
 import com.android.vending.expansion.zipfile.ZipResourceFile;
+import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
 import com.jrvermeer.psalter.R;
-import com.jrvermeer.psalter.UI.Adaptors.PsalterSearchAdapter;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
 import com.jrvermeer.psalter.Core.Models.Psalter;
 import com.jrvermeer.psalter.Core.Models.SqLiteQuery;
@@ -36,6 +33,7 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
     private Context context;
+    private ExpansionHelper expansionHelper;
 
     private static final int EXPANSION_MAIN = 19;
     private static final int EXPANSION_PATCH = 19;
@@ -45,6 +43,7 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
         this.context = context;
         setForcedUpgrade(DATABASE_VERSION);
         db = getReadableDatabase();
+        expansionHelper = new ExpansionHelper(context);
     }
 
     public int getCount(){
@@ -145,47 +144,15 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
     }
 
     public AssetFileDescriptor getAudioDescriptor(Psalter psalter) {
-        ZipResourceFile expansionFile = getExpansionFile();
-        if(expansionFile == null) return null;
+        AssetFileDescriptor afd = expansionHelper.getAudioDescriptor(true, "1912/Audio/" + psalter.getAudioFileName());
 
-        String fileName = "main." + EXPANSION_MAIN + "." + context.getPackageName() + "/1912/Audio/" + psalter.getAudioFileName();
-        AssetFileDescriptor afd = expansionFile.getAssetFileDescriptor(fileName);
         if(afd == null){
             Toast.makeText(context, "Audio not available for this number", Toast.LENGTH_SHORT).show();
-            return  null;
         }
-        else return afd;
+        return afd;
     }
 
     public Drawable getScore(Psalter psalter){
-        ZipResourceFile expansionFile = getExpansionFile();
-        if(expansionFile == null) return  null;
-
-        String fileName = "main." + EXPANSION_MAIN + "." + context.getPackageName() + "/1912/Score/" + psalter.getScoreFileName();
-        try{
-            InputStream stream = expansionFile.getInputStream(fileName);
-            return DrawableWrapper.createFromStream(stream, "src");
-            //return BitmapFactory.decodeStream(stream);
-        }
-        catch (Exception ex){
-            Toast.makeText(context, "Error reading image", Toast.LENGTH_SHORT).show();
-            return  null;
-        }
-    }
-
-    private ZipResourceFile getExpansionFile(){
-        try {
-            if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-                return APKExpansionSupport.getAPKExpansionZipFile(context, EXPANSION_MAIN, EXPANSION_PATCH);
-            }
-            else {
-                Toast.makeText(context, "External storage must be mounted to play audio and view score", Toast.LENGTH_SHORT).show();
-                return  null;
-            }
-        }
-        catch (Exception ex){
-            Toast.makeText(context, "Error finding audio file directory", Toast.LENGTH_SHORT).show();
-            return  null;
-        }
+        return expansionHelper.getImage(true, "1912/Score/" + psalter.getScoreFileName());
     }
 }

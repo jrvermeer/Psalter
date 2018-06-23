@@ -1,5 +1,6 @@
 package com.jrvermeer.psalter.UI.Activities;
 
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -9,6 +10,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Messenger;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
@@ -39,9 +41,15 @@ import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 import com.getkeepsafe.taptargetview.TapTarget;
 import com.getkeepsafe.taptargetview.TapTargetSequence;
 import com.getkeepsafe.taptargetview.TapTargetView;
+import com.google.android.vending.expansion.downloader.DownloadProgressInfo;
+import com.google.android.vending.expansion.downloader.DownloaderClientMarshaller;
+import com.google.android.vending.expansion.downloader.IDownloaderClient;
+import com.google.android.vending.expansion.downloader.IStub;
 import com.jrvermeer.psalter.BuildConfig;
 import com.jrvermeer.psalter.Core.Contracts.IPagerCallbacks;
 import com.jrvermeer.psalter.Core.Models.Psalter;
+import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
+import com.jrvermeer.psalter.Infrastructure.Expansion.PsalterDownloaderService;
 import com.jrvermeer.psalter.Infrastructure.Tutorials;
 import com.jrvermeer.psalter.R;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
@@ -60,11 +68,16 @@ import butterknife.OnItemClick;
 import butterknife.OnLongClick;
 import butterknife.OnPageChange;
 
-public class MainActivity extends AppCompatActivity
-        implements SearchView.OnQueryTextListener, AHBottomNavigation.OnTabSelectedListener, IPagerCallbacks{
+public class MainActivity extends AppCompatActivity implements
+        SearchView.OnQueryTextListener,
+        AHBottomNavigation.OnTabSelectedListener,
+        IPagerCallbacks,
+        IDownloaderClient {
     private final String TAG = "Psalter";
     private SharedPreferences sPref;
     private IPsalterRepository psalterRepository;
+    MediaControllerCompat mediaController;
+    IStub downloaderClient;
     Tutorials tutorials;
 
     @BindView(R.id.viewpager) ViewPager viewPager;
@@ -77,7 +90,7 @@ public class MainActivity extends AppCompatActivity
     @BindView(R.id.searchBtn_Psalter) Button searchBtn_Psalter;
     @BindView(R.id.bottom_navigation) AHBottomNavigation bottomNavigation;
     MenuItem searchMenuItem;
-    MediaControllerCompat mediaController;
+
     SearchView searchView;
 
     private static final int SEARCH_MODE_PSALTER = 256;
@@ -88,6 +101,35 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //ensure expansion files exist
+        ExpansionHelper expHelper = new ExpansionHelper(this);
+        if(!expHelper.expansionFilesDownloaded()){
+            Intent notifierIntent = new Intent(this, MainActivity.class);
+            notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                    notifierIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            try{
+                // Start the download service (if required)
+                int startResult = DownloaderClientMarshaller.startDownloadServiceIfRequired(this,
+                        pendingIntent, PsalterDownloaderService.class);
+                // If download has started, initialize this activity to show
+                // download progress
+                if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED) {
+                    // Instantiate a member instance of IStub
+                    downloaderClient = DownloaderClientMarshaller.CreateStub(this,
+                            PsalterDownloaderService.class);
+                    // Inflate layout that shows download progress
+                    //setContentView(R.layout.downloader_ui);
+                    //return;
+                }
+            }
+            catch (Exception ex){
+                Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
+            }
+        }
+
 
         // initialize theme (must do this before calling setContentView())
         sPref = getSharedPreferences("settings", MODE_PRIVATE);
@@ -140,6 +182,18 @@ public class MainActivity extends AppCompatActivity
                 bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        if(downloaderClient != null) downloaderClient.connect(this);
+        super.onResume();
+    }
+
+    @Override
+    protected void onStop() {
+        if(downloaderClient != null) downloaderClient.disconnect(this);
+        super.onStop();
     }
 
     @Override
@@ -477,55 +531,24 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
-//    public void showFabReminderTutorial(){
-//        boolean tutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fabreminder), false);
-//        if(!tutorialShown){
-//            TapTargetView.showFor(this, TapTarget.forView(fab,
-//                    getString(R.string.tutorial_fabreminder_title),
-//                    getString(R.string.tutorial_fabreminder_description)).transparentTarget(true));
-//            sPref.edit().putBoolean(getString(R.string.pref_tutorialshown_fabreminder), true).apply();
-//        }
-//    }
-//    public void showTutorialsOnStart(View psalmLink, View scoreButton){
-//        List<TapTarget> tutorialTargets = getStartTutorialTargets(psalmLink, scoreButton);
-//        if(tutorialTargets != null && tutorialTargets.size() > 0){
-//            new TapTargetSequence(this)
-//                    .targets(tutorialTargets)
-//                    .continueOnCancel(true)
-//                    .start();
-//
-//            startTutorialsShown();
-//        }
-//    }
-//    public List<TapTarget> getStartTutorialTargets(View psalmLink, View scoreButton){
-//        boolean goToPsalmTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_gotopsalm), false);
-//        boolean fabLongPressTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_fablongpress), false);
-//        boolean showScoreTutorialShown = sPref.getBoolean(getString(R.string.pref_tutorialshown_showscore), false);
-//
-//        List<TapTarget> targets = new ArrayList<>();
-//        if(!fabLongPressTutorialShown){
-//            targets.add(TapTarget.forView(fab,
-//                    getString(R.string.tutorial_fab_title),
-//                    getString(R.string.tutorial_fab_description))
-//                    .transparentTarget(true));
-//        }
-//        if(!goToPsalmTutorialShown && psalmLink != null){
-//            targets.add(TapTarget.forView(psalmLink.findViewById(R.id.tvPagerPsalm),
-//                    getString(R.string.tutorial_gotopsalm_title),
-//                    getString(R.string.tutorial_gotopsalm_description)));
-//        }
-//        if(!showScoreTutorialShown && scoreButton != null){
-//            targets.add(TapTarget.forView(scoreButton,
-//                    getString(R.string.tutorial_showscore_title),
-//                    getString(R.string.tutorial_showscore_description)));
-//        }
-//        return  targets;
-//    }
-//    private void startTutorialsShown(){
-//        sPref.edit()
-//                .putBoolean(getString(R.string.pref_tutorialshown_fablongpress), true)
-//                .putBoolean(getString(R.string.pref_tutorialshown_gotopsalm), true)
-//                .putBoolean(getString(R.string.pref_tutorialshown_showscore), true)
-//                .apply();
-//    }
+    private void downloadExpansionFiles(){
+
+
+
+    }
+
+    @Override
+    public void onServiceConnected(Messenger m) {
+
+    }
+
+    @Override
+    public void onDownloadStateChanged(int newState) {
+
+    }
+
+    @Override
+    public void onDownloadProgress(DownloadProgressInfo progress) {
+
+    }
 }
