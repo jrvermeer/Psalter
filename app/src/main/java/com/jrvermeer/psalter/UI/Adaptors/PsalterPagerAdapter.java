@@ -56,7 +56,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
                 if(score != null){
                     if(nightMode) Util.invertColors(score);
                     ((ImageView)layout.findViewById(R.id.imgScore)).setImageDrawable(score);
-                    int lyricStartIndex = lyrics.indexOf(String.valueOf(psalter.getNumVersesInsideStaff() + 1));
+                    int lyricStartIndex = lyrics.indexOf((psalter.getNumVersesInsideStaff() + 1) + ". ");
                     if(lyricStartIndex > 0) tvLyrics.setText(lyrics.substring(lyricStartIndex));
                 }
                 else tvLyrics.setText(lyrics);

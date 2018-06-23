@@ -397,6 +397,11 @@ public class MainActivity extends AppCompatActivity
     public boolean shuffle(){
         mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
         mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
+
+        tutorials.showTutorial(toolbar.findViewById(R.id.action_random),
+                R.string.pref_tutorialshown_randomWhenShuffling,
+                R.string.tutorial_randomWhenShuffling_title,
+                R.string.tutorial_randomWhenShuffling_description);
         return true;
     }
 
