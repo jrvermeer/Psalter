@@ -31,7 +31,7 @@ import java.util.ArrayList;
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
-    private static final int DATABASE_VERSION = 20;
+    private static final int DATABASE_VERSION = 21;
     private static final String DATABASE_NAME = "psalter.sqlite";
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
@@ -50,7 +50,7 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
     public int getCount(){
         try{
             return (int)DatabaseUtils.queryNumEntries(db, TABLE_NAME);
-        } catch (Exception ex){;
+        } catch (Exception ex){
             return 0;
         }
     }
