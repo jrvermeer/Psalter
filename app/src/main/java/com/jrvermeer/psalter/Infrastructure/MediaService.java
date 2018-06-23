@@ -308,7 +308,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private void updateMetaData(){
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, String.valueOf(psalter.getId()))
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, "#" + psalter.getNumber() + " - " + psalter.getHeading())
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, psalter.getTitle() + " - " + psalter.getHeading())
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, psalter.getSubtitleText())
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, String.format("Verse %d of %d", currentVerse, psalter.getNumverses()))
                 .build());
