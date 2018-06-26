@@ -147,7 +147,7 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
         AssetFileDescriptor afd = expansionHelper.getAudioDescriptor(true, "1912/Audio/" + psalter.getAudioFileName());
 
         if(afd == null){
-            Toast.makeText(context, "Audio not available for this number", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Audio not available for " + psalter.getTitle(), Toast.LENGTH_SHORT).show();
         }
         return afd;
     }

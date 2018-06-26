@@ -269,7 +269,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         }
         numActions++;
 
-        if(isShuffling()){ // todo: use transport actions
+        if(isShuffling()){
             Intent playNext = new Intent(this, MediaService.class).setAction(ACTION_NEXT);
             PendingIntent playNextOnTouch = PendingIntent.getService(this, 3, playNext, PendingIntent.FLAG_UPDATE_CURRENT);
 

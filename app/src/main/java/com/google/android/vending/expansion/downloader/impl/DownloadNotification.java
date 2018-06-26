@@ -23,10 +23,13 @@ import com.google.android.vending.expansion.downloader.Helpers;
 import com.google.android.vending.expansion.downloader.IDownloaderClient;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.os.Build;
 import android.os.Messenger;
+import android.support.v4.app.NotificationCompat;
 
 /**
  * This class handles displaying the notification associated with the download
@@ -168,6 +171,7 @@ public class DownloadNotification implements IDownloaderClient {
             mCustomNotification.setTicker(mLabel + ": " + mCurrentText);
             mCustomNotification.setTitle(mLabel);
             mCustomNotification.setTimeRemaining(progress.mTimeRemaining);
+
             mCurrentNotification = mCustomNotification.updateNotification(mContext);
         }
         mNotificationManager.notify(NOTIFICATION_ID, mCurrentNotification);
@@ -221,9 +225,20 @@ public class DownloadNotification implements IDownloaderClient {
                 mContext.getSystemService(Context.NOTIFICATION_SERVICE);
         mCustomNotification = CustomNotificationFactory
                 .createCustomNotification();
-        mNotification = new Notification();
+        createNotificationChannel();
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, NOTIFICATION_CHANNEL_ID);
+        mNotification = builder.build();
         mCurrentNotification = mNotification;
 
+    }
+
+    public static String NOTIFICATION_CHANNEL_ID = "downloadChannel";
+    private void createNotificationChannel(){
+        if(Build.VERSION.SDK_INT >= 26){
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                    "Downloading media", NotificationManager.IMPORTANCE_LOW);
+            mNotificationManager.createNotificationChannel(channel);
+        }
     }
 
     @Override

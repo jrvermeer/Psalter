@@ -102,35 +102,6 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //ensure expansion files exist
-        ExpansionHelper expHelper = new ExpansionHelper(this);
-        if(!expHelper.expansionFilesDownloaded()){
-            Intent notifierIntent = new Intent(this, MainActivity.class);
-            notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
-                    notifierIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            try{
-                // Start the download service (if required)
-                int startResult = DownloaderClientMarshaller.startDownloadServiceIfRequired(this,
-                        pendingIntent, PsalterDownloaderService.class);
-                // If download has started, initialize this activity to show
-                // download progress
-                if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED) {
-                    // Instantiate a member instance of IStub
-                    downloaderClient = DownloaderClientMarshaller.CreateStub(this,
-                            PsalterDownloaderService.class);
-                    // Inflate layout that shows download progress
-                    //setContentView(R.layout.downloader_ui);
-                    //return;
-                }
-            }
-            catch (Exception ex){
-                Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
-            }
-        }
-
-
         // initialize theme (must do this before calling setContentView())
         sPref = getSharedPreferences("settings", MODE_PRIVATE);
         boolean nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
@@ -182,6 +153,34 @@ public class MainActivity extends AppCompatActivity implements
                 bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             }
         });
+
+        //ensure expansion files exist
+        ExpansionHelper expHelper = new ExpansionHelper(this);
+        if(!expHelper.expansionFilesDownloaded()){
+            Intent notifierIntent = new Intent(this, MainActivity.class);
+            notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                    notifierIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            try{
+                // Start the download service (if required)
+                int startResult = DownloaderClientMarshaller.startDownloadServiceIfRequired(this,
+                        pendingIntent, PsalterDownloaderService.class);
+                // If download has started, initialize this activity to show
+                // download progress
+                if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED) {
+                    // Instantiate a member instance of IStub
+                    downloaderClient = DownloaderClientMarshaller.CreateStub(this,
+                            PsalterDownloaderService.class);
+                    // Inflate layout that shows download progress
+                    //setContentView(R.layout.downloader_ui);
+                    return;
+                }
+            }
+            catch (Exception ex){
+                Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     @Override
@@ -530,12 +529,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     };
-
-    private void downloadExpansionFiles(){
-
-
-
-    }
 
     @Override
     public void onServiceConnected(Messenger m) {
