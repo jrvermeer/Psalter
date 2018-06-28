@@ -7,8 +7,8 @@ android {
         applicationId "com.jrvermeer.psalter"
         minSdkVersion 19
         targetSdkVersion 26
-        versionCode 19
-        versionName "2.0"
+        versionCode 20
+        versionName "2.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -30,6 +30,7 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
+    compile 'com.flurry.android:analytics:11.1.0@aar'
     compile 'com.android.support:support-media-compat:27.1.1'
     compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:+'
     compile 'com.getkeepsafe.taptargetview:taptargetview:1.10.0'

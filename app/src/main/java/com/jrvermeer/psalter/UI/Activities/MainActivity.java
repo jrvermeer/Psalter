@@ -1,11 +1,15 @@
 package com.jrvermeer.psalter.UI.Activities;
 
+import android.Manifest;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -13,8 +17,11 @@ import android.os.IBinder;
 import android.os.Messenger;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -38,6 +45,7 @@ import android.widget.Toast;
 
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
+import com.flurry.android.FlurryAgent;
 import com.getkeepsafe.taptargetview.TapTarget;
 import com.getkeepsafe.taptargetview.TapTargetSequence;
 import com.getkeepsafe.taptargetview.TapTargetView;
@@ -76,9 +84,10 @@ public class MainActivity extends AppCompatActivity implements
     private final String TAG = "Psalter";
     private SharedPreferences sPref;
     private IPsalterRepository psalterRepository;
-    MediaControllerCompat mediaController;
-    IStub downloaderClient;
-    Tutorials tutorials;
+    private MediaControllerCompat mediaController;
+    private IStub downloaderClient;
+    private Tutorials tutorials;
+    private ExpansionHelper expHelper;
 
     @BindView(R.id.viewpager) ViewPager viewPager;
     @BindView(R.id.fab) FloatingActionButton fab;
@@ -110,6 +119,10 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
+
+        new FlurryAgent.Builder()
+                .withLogEnabled(true)
+                .build(this, getString(R.string.secret_flurry));
 
         psalterRepository = new PsalterDb(this);
 
@@ -155,33 +168,13 @@ public class MainActivity extends AppCompatActivity implements
         });
 
         //ensure expansion files exist
-        ExpansionHelper expHelper = new ExpansionHelper(this);
+        expHelper = new ExpansionHelper(this);
         if(!expHelper.expansionFilesDownloaded()){
-            Intent notifierIntent = new Intent(this, MainActivity.class);
-            notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
-                    notifierIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            try{
-                // Start the download service (if required)
-                int startResult = DownloaderClientMarshaller.startDownloadServiceIfRequired(this,
-                        pendingIntent, PsalterDownloaderService.class);
-                // If download has started, initialize this activity to show
-                // download progress
-                if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED) {
-                    // Instantiate a member instance of IStub
-                    downloaderClient = DownloaderClientMarshaller.CreateStub(this,
-                            PsalterDownloaderService.class);
-                    // Inflate layout that shows download progress
-                    //setContentView(R.layout.downloader_ui);
-                    return;
-                }
-            }
-            catch (Exception ex){
-                Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
-            }
+            downloadExpansionFiles();
         }
     }
+
+
 
     @Override
     protected void onResume() {
@@ -451,6 +444,7 @@ public class MainActivity extends AppCompatActivity implements
         mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
         mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
 
+        FlurryAgent.logEvent("shuffle_audio");
         tutorials.showTutorial(toolbar.findViewById(R.id.action_random),
                 R.string.pref_tutorialshown_randomWhenShuffling,
                 R.string.tutorial_randomWhenShuffling_title,
@@ -530,6 +524,65 @@ public class MainActivity extends AppCompatActivity implements
         }
     };
 
+    private static int WRITE_STORAGE = 1;
+    private void downloadExpansionFiles() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            AlertDialog.Builder builder;
+            if(Build.VERSION.SDK_INT >= 21){
+                builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog);
+            }
+            else builder = new AlertDialog.Builder(this, android.R.style.Theme_Holo_Dialog);
+
+            builder.setMessage(R.string.request_writestorage_message)
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            ActivityCompat.requestPermissions(MainActivity.this,
+                                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                                    WRITE_STORAGE);
+                        }
+                    })
+                .setCancelable(false)
+                .show();
+        }
+        else{
+            performDownloadExpansionFiles();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == WRITE_STORAGE){
+            if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                performDownloadExpansionFiles();
+            }
+            else {
+                Toast.makeText(this, "Fine, enjoy your featureless app!", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void performDownloadExpansionFiles(){
+        try{
+            FlurryAgent.logEvent("Expansion_Manual_Download");
+            Intent notifierIntent = new Intent(this, MainActivity.class);
+            notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                    notifierIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            int startResult = DownloaderClientMarshaller.startDownloadServiceIfRequired(this,
+                    pendingIntent, PsalterDownloaderService.class);
+            if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED) {
+                downloaderClient = DownloaderClientMarshaller.CreateStub(this, PsalterDownloaderService.class);
+            }
+        }
+        catch (Exception ex){
+            FlurryAgent.onError("downloading_files", "", ex);
+            Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
+        }
+    }
     @Override
     public void onServiceConnected(Messenger m) {
 
@@ -537,7 +590,20 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onDownloadStateChanged(int newState) {
+        if(newState == IDownloaderClient.STATE_COMPLETED){
+            AlertDialog.Builder builder;
+            if(Build.VERSION.SDK_INT >= 21){
+                builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog);
+            }
+            else builder = new AlertDialog.Builder(this, android.R.style.Theme_Holo_Dialog);
 
+            builder.setMessage(R.string.download_complete_message)
+                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) { }
+                    })
+                    .show();
+        }
     }
 
     @Override

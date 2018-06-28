@@ -20,7 +20,6 @@ import com.jrvermeer.psalter.Core.Models.Psalter;
 import com.jrvermeer.psalter.Core.Models.SqLiteQuery;
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 
 /**
@@ -28,15 +27,12 @@ import java.util.ArrayList;
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
-    private static final int DATABASE_VERSION = 21;
+    private static final int DATABASE_VERSION = 22;
     private static final String DATABASE_NAME = "psalter.sqlite";
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
     private Context context;
     private ExpansionHelper expansionHelper;
-
-    private static final int EXPANSION_MAIN = 19;
-    private static final int EXPANSION_PATCH = 19;
 
     public PsalterDb(final Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -66,7 +62,6 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
         return results[0];
     }
     public Psalter getRandom(){
-        //SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)
         Psalter[] results = queryPsalter("_id IN (SELECT _id FROM " + TABLE_NAME + " ORDER BY RANDOM() LIMIT 1)", null , null);
         return results[0];
     }

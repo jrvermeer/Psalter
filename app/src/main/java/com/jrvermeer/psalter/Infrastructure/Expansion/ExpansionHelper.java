@@ -24,8 +24,8 @@ import java.io.InputStream;
  */
 
 public class ExpansionHelper {
-    private static final int EXPANSION_MAIN = 19;
-    private static final int EXPANSION_PATCH = 19;
+    private static final int EXPANSION_MAIN = 20;
+    private static final int EXPANSION_PATCH = 0;
     private Context context;
 
     public ExpansionHelper(Context context){
@@ -42,7 +42,7 @@ public class ExpansionHelper {
             if(!path.startsWith("/")) subFolder += "/";
 
             InputStream stream = folder.getInputStream(subFolder + path);
-            return DrawableWrapper.createFromStream(stream, "src");
+            return Drawable.createFromStream(stream, "src");
         }
         catch (Exception ex){
             Toast.makeText(context, "Error reading image", Toast.LENGTH_SHORT).show();

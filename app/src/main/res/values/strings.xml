@@ -33,6 +33,9 @@
     <string name="tutorial_randomWhenShuffling_title">When shuffling audio, this button will skip to the next random song</string>
     <string name="tutorial_randomWhenShuffling_description">Just like the skip button in the notification</string>
 
+    <string name="request_writestorage_message">In order to download and use audio recordings and music score, Psalter needs access to external storage.</string>
+    <string name="download_complete_message">Audio and score are now available! Enjoy!</string>
+
     <string-array name="search_ignore_strings">
         <item>\'</item>
         <item>\"</item>
