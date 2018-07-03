@@ -7,8 +7,8 @@ android {
         applicationId "com.jrvermeer.psalter"
         minSdkVersion 19
         targetSdkVersion 26
-        versionCode 20
-        versionName "2.1"
+        versionCode 22
+        versionName "2.2"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -32,7 +32,7 @@ dependencies {
     })
     compile 'com.flurry.android:analytics:11.1.0@aar'
     compile 'com.android.support:support-media-compat:27.1.1'
-    compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:+'
+    compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:2.0.1'
     compile 'com.getkeepsafe.taptargetview:taptargetview:1.10.0'
     compile 'com.android.support:design:27.1.1'
     compile 'com.aurelhubert:ahbottomnavigation:2.0.4'

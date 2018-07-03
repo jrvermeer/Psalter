@@ -268,11 +268,23 @@ public class MainActivity extends AppCompatActivity implements
             try {
                 int number = Integer.parseInt(query);
                 if(SEARCH_MODE == SEARCH_MODE_PSALTER){
-                    collapseSearchView();
-                    goToPsalter(number);
+                    if(1 <= number && number <= 434){
+                        collapseSearchView();
+                        goToPsalter(number);
+                    }
+                    else{
+                        Toast.makeText(this, "Pick a number between 1 and 434", Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
                 }
-                else if (SEARCH_MODE == SEARCH_MODE_PSALM && 1 <= number && number <= 150){
-                    performPsalmSearch(number);
+                else if (SEARCH_MODE == SEARCH_MODE_PSALM){
+                    if(1 <= number && number <= 150){
+                        performPsalmSearch(number);
+                    }
+                    else{
+                        Toast.makeText(this, "Pick a number between 1 and 150", Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
                 }
                 else return false;
 
