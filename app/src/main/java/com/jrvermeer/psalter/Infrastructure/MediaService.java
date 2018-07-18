@@ -40,7 +40,9 @@ import com.jrvermeer.psalter.R;
  * Created by Jonathan on 4/3/2017.
  */
 
-public class MediaService extends Service implements AudioManager.OnAudioFocusChangeListener, MediaPlayer.OnCompletionListener {
+public class MediaService extends Service
+        implements AudioManager.OnAudioFocusChangeListener,
+            MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
     private MediaBinder mBinder = new MediaBinder();
 
     private IPsalterRepository psalterRepository;
@@ -49,6 +51,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private NotificationManagerCompat notificationManager;
     private MediaPlayer mediaPlayer = new MediaPlayer();
     private Handler handler = new Handler();
+    private Logger logger;
 
     private MediaSessionCompat mediaSession;
     private MediaControllerCompat.TransportControls controls;
@@ -65,6 +68,7 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
     private static final String ACTION_STOP = "ACTION_STOP";
     private static final String ACTION_NEXT = "ACTION_NEXT";
     private static final String ACTION_PLAY = "ACTION_PLAY";
+    public static final String ACTION_PLAY_SHUFFLE = "ACTION_PLAY_SHUFFLE";
 
     @Override
     public void onCreate() {
@@ -76,8 +80,10 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
         mediaSession = new MediaSessionCompat(this, "MediaService");
         mediaSession.setCallback(mMediaSessionCallback);
         mediaSession.setFlags( MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS );
+        mediaSession.setMediaButtonReceiver(null);
         controls = mediaSession.getController().getTransportControls();
         updatePlaybackState(PlaybackStateCompat.STATE_NONE);
+        logger = new Logger(this);
     }
 
     @Override
@@ -105,6 +111,10 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
                 }
                 else if(action.equals(ACTION_PLAY)){
                     controls.play();
+                }
+                else if(action.equals(ACTION_PLAY_SHUFFLE)){
+                    controls.setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
+                    controls.skipToNext();
                 }
             }
             else MediaButtonReceiver.handleIntent(mediaSession, intent);
@@ -164,7 +174,9 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
             if(isShuffling()){
                 controls.skipToNext();
             }
-            else playbackEnded();
+            else {
+                playbackEnded();
+            }
         }
     }
     private boolean isShuffling(){
@@ -284,13 +296,15 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
 
     private void updatePlaybackState(int state){
         long actions = PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID | PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH;
-        if(isShuffling()){
+        boolean isShuffling = isShuffling();
+        if(isShuffling){
             actions = actions | PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
         }
         if(state == PlaybackStateCompat.STATE_PAUSED){
             actions = actions
                     | PlaybackStateCompat.ACTION_PLAY
                     | PlaybackStateCompat.ACTION_STOP;
+
         }
         else if(state == PlaybackStateCompat.STATE_STOPPED){
             actions = actions | PlaybackStateCompat.ACTION_PLAY;
@@ -341,7 +355,6 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
             else if(psalter != null){
                 playPsalter(psalter, currentVerse);
             }
-
         }
 
         @Override
@@ -393,6 +406,13 @@ public class MediaService extends Service implements AudioManager.OnAudioFocusCh
             playPsalter(psalterRepository.getRandom(), 1);
         }
     };
+
+    @Override
+    public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+        mediaPlayer.reset();
+        logger.error("MediaPlayer error.");
+        return false;
+    }
 
     public class MediaBinder extends Binder{
         public MediaSessionCompat.Token getSessionToken(){

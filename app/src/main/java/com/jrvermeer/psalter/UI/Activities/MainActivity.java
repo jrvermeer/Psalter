@@ -19,6 +19,7 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.StringRes;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -32,7 +33,6 @@ import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -45,19 +45,18 @@ import android.widget.Toast;
 
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
-import com.flurry.android.FlurryAgent;
-import com.getkeepsafe.taptargetview.TapTarget;
-import com.getkeepsafe.taptargetview.TapTargetSequence;
-import com.getkeepsafe.taptargetview.TapTargetView;
 import com.google.android.vending.expansion.downloader.DownloadProgressInfo;
 import com.google.android.vending.expansion.downloader.DownloaderClientMarshaller;
 import com.google.android.vending.expansion.downloader.IDownloaderClient;
 import com.google.android.vending.expansion.downloader.IStub;
 import com.jrvermeer.psalter.BuildConfig;
 import com.jrvermeer.psalter.Core.Contracts.IPagerCallbacks;
+import com.jrvermeer.psalter.Core.Models.LogEvent;
 import com.jrvermeer.psalter.Core.Models.Psalter;
+import com.jrvermeer.psalter.Core.Models.SearchMode;
 import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
 import com.jrvermeer.psalter.Infrastructure.Expansion.PsalterDownloaderService;
+import com.jrvermeer.psalter.Infrastructure.Logger;
 import com.jrvermeer.psalter.Infrastructure.Tutorials;
 import com.jrvermeer.psalter.R;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
@@ -66,8 +65,8 @@ import com.jrvermeer.psalter.Infrastructure.PsalterDb;
 import com.jrvermeer.psalter.UI.Adaptors.PsalterPagerAdapter;
 import com.jrvermeer.psalter.UI.Adaptors.PsalterSearchAdapter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -81,13 +80,14 @@ public class MainActivity extends AppCompatActivity implements
         AHBottomNavigation.OnTabSelectedListener,
         IPagerCallbacks,
         IDownloaderClient {
-    private final String TAG = "Psalter";
+
     private SharedPreferences sPref;
     private IPsalterRepository psalterRepository;
     private MediaControllerCompat mediaController;
     private IStub downloaderClient;
     private Tutorials tutorials;
     private ExpansionHelper expHelper;
+    private Logger log;
 
     @BindView(R.id.viewpager) ViewPager viewPager;
     @BindView(R.id.fab) FloatingActionButton fab;
@@ -99,13 +99,9 @@ public class MainActivity extends AppCompatActivity implements
     @BindView(R.id.searchBtn_Psalter) Button searchBtn_Psalter;
     @BindView(R.id.bottom_navigation) AHBottomNavigation bottomNavigation;
     MenuItem searchMenuItem;
-
     SearchView searchView;
 
-    private static final int SEARCH_MODE_PSALTER = 256;
-    private static final int SEARCH_MODE_PSALM = 257;
-    private static final int SEARCH_MODE_LYRICS = 258;
-    private int SEARCH_MODE = SEARCH_MODE_PSALTER;
+    private SearchMode searchMode = SearchMode.Psalter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,16 +116,8 @@ public class MainActivity extends AppCompatActivity implements
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
 
-        new FlurryAgent.Builder()
-                .withLogEnabled(true)
-                .build(this, getString(R.string.secret_flurry));
-
+        log = new Logger(this);
         psalterRepository = new PsalterDb(this);
-
-        //initialize viewpager
-        PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter(this, psalterRepository,this, false, nightMode);
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(sPref.getInt(getString(R.string.pref_lastindex), 0));
 
         //initialize bottom nav
         AHBottomNavigationItem bottomNav_noScore = new AHBottomNavigationItem("", R.drawable.ic_no_score);
@@ -140,13 +128,20 @@ public class MainActivity extends AppCompatActivity implements
         bottomNavigation.setDefaultBackgroundColor(getResources().getColor(R.color.colorPrimaryInverse));
         bottomNavigation.setAccentColor(Color.WHITE);
         bottomNavigation.setOnTabSelectedListener(this);
-        bottomNavigation.setCurrentItem(sPref.getInt(getString(R.string.pref_bottomnav), 0), true);
+        int bottomNavIndex = sPref.getInt(getString(R.string.pref_bottomnav), 0);
+        bottomNavigation.setCurrentItem(bottomNavIndex, false);
+
+        //initialize viewpager
+        PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter(this, psalterRepository,
+                this, bottomNavIndex == 1, nightMode);
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(sPref.getInt(getString(R.string.pref_lastindex), 0));
 
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, psalterRepository));
 
         // initialize media service
         Intent intent = new Intent(this, MediaService.class);
-        getApplicationContext().bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
+        bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
 
         tutorials = new Tutorials(this);
         tutorials.showTutorial(fab,
@@ -250,24 +245,29 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public boolean onTabSelected(int position, boolean wasSelected) {
+        if(wasSelected) return false;
         PsalterPagerAdapter adapter = (PsalterPagerAdapter)viewPager.getAdapter();
-        if(position == 1) adapter.showScore();
+        boolean showScore = position == 1;
+        if(showScore) adapter.showScore();
         else adapter.hideScore();
+
         int currentPage = viewPager.getCurrentItem();
         viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(currentPage);
+
+        log.changeScore(showScore);
         return true;
     }
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        if(SEARCH_MODE == SEARCH_MODE_LYRICS){
+        if(searchMode == SearchMode.Lyrics){
             performStringSearch(query);
         }
         else {
             try {
                 int number = Integer.parseInt(query);
-                if(SEARCH_MODE == SEARCH_MODE_PSALTER){
+                if(searchMode == SearchMode.Psalter){
                     if(1 <= number && number <= 434){
                         collapseSearchView();
                         goToPsalter(number);
@@ -277,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements
                         return false;
                     }
                 }
-                else if (SEARCH_MODE == SEARCH_MODE_PSALM){
+                else if (searchMode == SearchMode.Psalm){
                     if(1 <= number && number <= 150){
                         performPsalmSearch(number);
                     }
@@ -293,11 +293,12 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
         searchView.clearFocus();
+        log.searchSubmitted(searchMode, query);
         return true;
     }
     @Override
     public boolean onQueryTextChange(String newText) {
-        if(SEARCH_MODE == SEARCH_MODE_LYRICS && newText.length() > 1){
+        if(searchMode == SearchMode.Lyrics && newText.length() > 1){
             performStringSearch(newText);
             return true;
         }
@@ -307,7 +308,7 @@ public class MainActivity extends AppCompatActivity implements
     public void searchPsalm(){
         searchView.setInputType(InputType.TYPE_CLASS_NUMBER);
         searchView.setQueryHint("Enter Psalm (1 - 150)");
-        SEARCH_MODE = SEARCH_MODE_PSALM;
+        searchMode = SearchMode.Psalm;
         if(Build.VERSION.SDK_INT < 23){
             searchBtn_Psalter.setTextAppearance(this, R.style.Button);
             searchBtn_Psalm.setTextAppearance(this, R.style.Button_Selected);
@@ -323,7 +324,7 @@ public class MainActivity extends AppCompatActivity implements
     public void searchLyrics() {
         searchView.setInputType(InputType.TYPE_CLASS_TEXT);
         searchView.setQueryHint("Enter search query");
-        SEARCH_MODE = SEARCH_MODE_LYRICS;
+        searchMode = SearchMode.Lyrics;
         if(Build.VERSION.SDK_INT < 23){
             searchBtn_Psalter.setTextAppearance(this, R.style.Button);
             searchBtn_Psalm.setTextAppearance(this, R.style.Button);
@@ -339,7 +340,7 @@ public class MainActivity extends AppCompatActivity implements
     public void searchPsalter(){
         searchView.setInputType(InputType.TYPE_CLASS_NUMBER);
         searchView.setQueryHint("Enter Psalter number (1 - 434)");
-        SEARCH_MODE = SEARCH_MODE_PSALTER;
+        searchMode = SearchMode.Psalter;
         if(Build.VERSION.SDK_INT < 23){
             searchBtn_Psalter.setTextAppearance(this, R.style.Button_Selected);
             searchBtn_Psalm.setTextAppearance(this, R.style.Button);
@@ -356,9 +357,11 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if(id == R.id.action_nightmode){
-            boolean nightmode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
-            sPref.edit().putBoolean(getString(R.string.pref_nightmode), nightmode).apply();
-            item.setChecked(nightmode);
+            boolean nightMode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
+            sPref.edit().putBoolean(getString(R.string.pref_nightmode), nightMode).apply();
+            item.setChecked(nightMode);
+            log.changeTheme(nightMode);
+
             if(Build.VERSION.SDK_INT == 23){ // framework bug in api 23 calling recreate inside onOptionsItemSelected.
                 finish();
                 startActivity(getIntent());
@@ -374,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements
                 Psalter psalter = psalterRepository.getRandom();
                 viewPager.setCurrentItem(psalter.getId(), true);
             }
-
+            log.event(LogEvent.GoToRandom);
         }
         else if(id == R.id.action_shuffle) {
             tutorials.showTutorial(fab, R.string.pref_tutorialshown_fabreminder,
@@ -447,16 +450,19 @@ public class MainActivity extends AppCompatActivity implements
             mediaController.getTransportControls().stop();
         }
         else {
+            Psalter psalter = getSelectedPsalter();
             mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_NONE);
-            mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
+            mediaController.getTransportControls().playFromMediaId(String.valueOf(psalter.getId()), null);
+            log.playbackStarted(psalter.getTitle(), false);
         }
     }
     @OnLongClick(R.id.fab)
     public boolean shuffle(){
+        Psalter psalter = getSelectedPsalter();
         mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
-        mediaController.getTransportControls().playFromMediaId(getMediaId(), null);
+        mediaController.getTransportControls().playFromMediaId(String.valueOf(psalter.getId()), null);
+        log.playbackStarted(psalter.getTitle(), true);
 
-        FlurryAgent.logEvent("shuffle_audio");
         tutorials.showTutorial(toolbar.findViewById(R.id.action_random),
                 R.string.pref_tutorialshown_randomWhenShuffling,
                 R.string.tutorial_randomWhenShuffling_title,
@@ -469,9 +475,12 @@ public class MainActivity extends AppCompatActivity implements
         try {
             TextView tvNumber = ((PsalterSearchAdapter.ViewHolder)view.getTag()).tvNumber;
             int num = Integer.parseInt(tvNumber.getText().toString());
+
+            //log event before collapsing searchview, so we can log the query text
+            log.searchResultSelected(searchView.getQuery().toString(), String.valueOf(num));
+
             collapseSearchView();
             goToPsalter(num);
-
         } catch (Exception ex) {
             Toast.makeText(MainActivity.this, ex.getMessage(), Toast.LENGTH_SHORT).show();
         }
@@ -496,8 +505,8 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private String getMediaId(){
-        return String.valueOf(viewPager.getCurrentItem());
+    private Psalter getSelectedPsalter(){
+        return psalterRepository.getIndex(viewPager.getCurrentItem());
     }
     ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -506,11 +515,9 @@ public class MainActivity extends AppCompatActivity implements
                 mediaController = new MediaControllerCompat(MainActivity.this, ((MediaService.MediaBinder) iBinder).getSessionToken());
                 mediaController.registerCallback(callback);
                 callback.onPlaybackStateChanged(mediaController.getPlaybackState());
-
-                Log.d(TAG, "MediaService connected");
             }
             catch (RemoteException ex){
-                Log.e(TAG, ex.toString());
+
             }
         }
 
@@ -577,7 +584,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void performDownloadExpansionFiles(){
         try{
-            FlurryAgent.logEvent("Expansion_Manual_Download");
+            log.event(LogEvent.ExpansionManualDownload);
             Intent notifierIntent = new Intent(this, MainActivity.class);
             notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
                     Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -591,7 +598,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
         catch (Exception ex){
-            FlurryAgent.onError("downloading_files", "", ex);
+            log.error(ex);
             Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
         }
     }
