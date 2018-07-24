@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity implements
         saveState();
         if(isFinishing()){
             mediaController.getTransportControls().stop();
-            getApplicationContext().unbindService(mConnection);
+            unbindService(mConnection);
         }
         super.onDestroy();
     }

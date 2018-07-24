@@ -17,7 +17,11 @@
 
         </activity>
 
-        <service android:name=".Infrastructure.MediaService" />
+        <service android:name=".Infrastructure.MediaService" >
+            <intent-filter>
+             <action android:name="android.intent.action.MEDIA_BUTTON" />
+           </intent-filter>
+        </service>
         <service android:name=".Infrastructure.Expansion.PsalterDownloaderService" />
 
         <receiver android:name="android.support.v4.media.session.MediaButtonReceiver" >
@@ -46,7 +50,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
 
     <!-- Required to read and write the expansion files on shared storage -->
-    <!--<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"></uses-permission>-->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"></uses-permission>
     <!--<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />-->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
 </manifest>

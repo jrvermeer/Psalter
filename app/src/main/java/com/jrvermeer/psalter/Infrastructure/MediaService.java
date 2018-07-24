@@ -80,7 +80,6 @@ public class MediaService extends Service
         mediaSession = new MediaSessionCompat(this, "MediaService");
         mediaSession.setCallback(mMediaSessionCallback);
         mediaSession.setFlags( MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS );
-        mediaSession.setMediaButtonReceiver(null);
         controls = mediaSession.getController().getTransportControls();
         updatePlaybackState(PlaybackStateCompat.STATE_NONE);
         logger = new Logger(this);
@@ -320,9 +319,13 @@ public class MediaService extends Service
                 .build());
     }
     private void updateMetaData(){
+        String title = psalter.getTitle() + " - " + psalter.getHeading();
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, String.valueOf(psalter.getId()))
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, psalter.getTitle() + " - " + psalter.getHeading())
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, psalter.getSubtitleText())
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, psalter.getSubtitleText())
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, psalter.getSubtitleText())
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, String.format("Verse %d of %d", currentVerse, psalter.getNumverses()))
                 .build());
