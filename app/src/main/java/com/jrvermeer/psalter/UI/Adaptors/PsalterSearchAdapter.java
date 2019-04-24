@@ -16,8 +16,12 @@ import android.widget.TextView;
 
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
 import com.jrvermeer.psalter.Core.Models.Psalter;
+import com.jrvermeer.psalter.Infrastructure.Helpers;
 import com.jrvermeer.psalter.Infrastructure.PsalterDb;
 import com.jrvermeer.psalter.R;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -74,18 +78,36 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
             }
             else{ //lyric search
                 String filterLyrics = psalter.getLyrics().toLowerCase();
-                int i = filterLyrics.indexOf(query);
-                int iStart = getVerseStartIndex(filterLyrics, i);
-                int iEnd = getVerseEndIndex(filterLyrics, i);
 
-                String displayVerse = psalter.getLyrics().substring(iStart, iEnd);
-                String filterVerse = displayVerse.toLowerCase();
-                SpannableStringBuilder str = new SpannableStringBuilder(displayVerse);
-                int iHighlightStart = filterVerse.indexOf(query);
-                int iHighlightEnd = iHighlightStart + query.length();
-                str.setSpan(new StyleSpan(Typeface.BOLD), iHighlightStart, iHighlightEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                str.setSpan(new AbsoluteSizeSpan((int)(holder.tvLyrics.getTextSize() * 1.5)), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                holder.tvLyrics.setText(str);
+                // new
+
+
+                // build SpannableStringBuilder of only the verses that contain query
+                SpannableStringBuilder viewText = new SpannableStringBuilder();
+                List<Integer> verseHitIndices = new ArrayList<>(); // could be verse number, could be chorus, so build a list of indexes
+                boolean first = true;
+                for(int i : Helpers.allIndexesOf(filterLyrics, query)){
+                    int iStart = getVerseStartIndex(filterLyrics, i);
+
+                    if(!verseHitIndices.contains(iStart)){ // if 1st occurance of query in this verse, add verse to display
+                        verseHitIndices.add(iStart);
+                        int iEnd = getVerseEndIndex(filterLyrics, i);
+                        if(!first) viewText.append("\n\n");
+                        first = false;
+                        viewText.append(psalter.getLyrics().substring(iStart, iEnd));
+                    }
+                }
+                // highlight all instances of query
+                String filterText = viewText.toString().toLowerCase();
+                int iHighlightStart = filterText.indexOf(query);
+                while(iHighlightStart >= 0) {
+                    int iHighlightEnd = iHighlightStart + query.length();
+                    viewText.setSpan(new StyleSpan(Typeface.BOLD), iHighlightStart, iHighlightEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    viewText.setSpan(new AbsoluteSizeSpan((int)(holder.tvLyrics.getTextSize() * 1.5)), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    iHighlightStart = filterText.indexOf(query, iHighlightStart + 1);
+                }
+
+                holder.tvLyrics.setText(viewText);
             }
             return convertView;
 
@@ -101,18 +123,22 @@ public class PsalterSearchAdapter extends ArrayAdapter<Psalter> {
         }
         return filteredQuery;
     }
+
+
     //given random index in lyrics string, return index of the beginning of that verse
     private int getVerseStartIndex(String lyrics, int queryStartIndex){
         int startIndex = lyrics.lastIndexOf("\n\n", queryStartIndex);
         if(startIndex < 0) return 0;
         else return startIndex + 2; // don't need to display the 2 newline chars
     }
+
     //given random index in lyrics string, return index of the end of that verse
     private int getVerseEndIndex(String lyrics, int queryStartIndex){
         int i = lyrics.indexOf("\n\n", queryStartIndex);
         if(i > 0) return i;
-        else return  lyrics.length() - 1;
+        else return  lyrics.length();
     }
+
     public static class ViewHolder{
         @BindView(R.id.tvSearchNumber) public TextView tvNumber;
         @BindView(R.id.tvSearchLyrics) public TextView tvLyrics;

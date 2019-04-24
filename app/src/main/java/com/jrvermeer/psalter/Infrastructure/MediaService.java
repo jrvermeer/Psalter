@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.AssetFileDescriptor;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -261,6 +262,7 @@ public class MediaService extends Service
         NotificationCompat.Builder builder = new NotificationCompat.Builder(MediaService.this, NOTIFICATION_CHANNEL_ID);
         MediaMetadataCompat metadata = mediaSession.getController().getMetadata();
         builder.setSmallIcon(R.drawable.ic_smallicon)
+                .setLargeIcon(psalterRepository.getScore(psalter).getBitmap())
                 .setContentTitle(metadata.getString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE))
                 .setContentText(metadata.getString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION))
                 .setSubText(metadata.getString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE))
@@ -325,9 +327,10 @@ public class MediaService extends Service
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, psalter.getSubtitleText())
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, psalter.getSubtitleText())
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "The Psalter")
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, psalter.getSubtitleText())
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, String.format("Verse %d of %d", currentVerse, psalter.getNumverses()))
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, psalterRepository.getScore(psalter).getBitmap())
                 .build());
     }
     private void updateNotification(){

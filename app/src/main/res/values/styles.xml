@@ -1,6 +1,7 @@
 <resources>
 
     <attr name="toolbarStyle" format="reference" />
+    <attr name="secondaryFabStyle" format="reference" />
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -39,6 +40,7 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
+
     <!-- Light application theme. -->
     <style name="AppTheme.Light">
         <item name="colorPrimary">@color/colorPrimary</item>
@@ -47,6 +49,7 @@
         <item name="android:windowBackground">@color/colorBackground</item>
         <item name="toolbarStyle">@style/Toolbar.Light</item>
         <!--<item name="buttonStyle">@style/Button.Light</item>-->
+        <item name="secondaryFabStyle">@style/SecondaryFabLight</item>
     </style>
 
     <style name="Toolbar.Light">
@@ -58,6 +61,11 @@
         <item name="android:background">#ffffff</item>
         <item name="android:textColor">@android:color/black</item>
         <item name="colorControlNormal">@android:color/black</item>
+    </style>
+
+    <style name="SecondaryFabLight">
+        <item name="android:tint">@color/colorAccent</item>
+        <item name="colorAccent">#ffffff</item>
     </style>
 
     <!--<style name="Button.Light">-->
@@ -72,6 +80,7 @@
         <item name="android:windowBackground">@android:color/black</item>
         <item name="toolbarStyle">@style/Toolbar.Dark</item>
         <!--<item name="buttonStyle">@style/Button.Dark</item>-->
+        <item name="secondaryFabStyle">@style/SecondaryFabDark</item>
 
         <item name="android:textColor">@color/colorLightText</item>
         <item name="android:textColorPrimary">#fff</item>
@@ -94,6 +103,10 @@
         <!--<item name="android:textColor">@color/colorLightText</item>-->
 
     <!--</style>-->
+
+    <style name="SecondaryFabDark">
+        <item name="android:tint">@color/colorUnselectedInverse</item>
+    </style>
 
     <style name="AppTheme.Light.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 

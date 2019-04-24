@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.DrawableWrapper;
 import android.os.Environment;
@@ -147,7 +148,7 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
         return afd;
     }
 
-    public Drawable getScore(Psalter psalter){
-        return expansionHelper.getImage(true, "1912/Score/" + psalter.getScoreFileName());
+    public BitmapDrawable getScore(Psalter psalter){
+        return (BitmapDrawable)expansionHelper.getImage(true, "1912/Score/" + psalter.getScoreFileName());
     }
 }

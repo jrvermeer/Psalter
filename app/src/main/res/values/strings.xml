@@ -3,7 +3,7 @@
 
     <string name="pref_nightmode">key_nightmode</string>
     <string name="pref_lastindex">key_lastindex</string>
-    <string name="pref_bottomnav">key_bottomnav</string>
+    <string name="pref_showScore">key_showscore</string>
 
 
     <string name="action_nightmode">Night Mode</string>
@@ -42,5 +42,6 @@
         <item>,</item>
         <item>:</item>
         <item>;</item>
+        <item>.</item>
     </string-array>
 </resources>

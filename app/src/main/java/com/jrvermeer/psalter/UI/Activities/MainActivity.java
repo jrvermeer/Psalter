@@ -10,16 +10,12 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Messenger;
-import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.StringRes;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -36,15 +32,12 @@ import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
-import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
 import com.google.android.vending.expansion.downloader.DownloadProgressInfo;
 import com.google.android.vending.expansion.downloader.DownloaderClientMarshaller;
 import com.google.android.vending.expansion.downloader.IDownloaderClient;
@@ -56,6 +49,7 @@ import com.jrvermeer.psalter.Core.Models.Psalter;
 import com.jrvermeer.psalter.Core.Models.SearchMode;
 import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
 import com.jrvermeer.psalter.Infrastructure.Expansion.PsalterDownloaderService;
+import com.jrvermeer.psalter.Infrastructure.Helpers;
 import com.jrvermeer.psalter.Infrastructure.Logger;
 import com.jrvermeer.psalter.Infrastructure.Tutorials;
 import com.jrvermeer.psalter.R;
@@ -64,9 +58,6 @@ import com.jrvermeer.psalter.Infrastructure.MediaService;
 import com.jrvermeer.psalter.Infrastructure.PsalterDb;
 import com.jrvermeer.psalter.UI.Adaptors.PsalterPagerAdapter;
 import com.jrvermeer.psalter.UI.Adaptors.PsalterSearchAdapter;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -77,7 +68,6 @@ import butterknife.OnPageChange;
 
 public class MainActivity extends AppCompatActivity implements
         SearchView.OnQueryTextListener,
-        AHBottomNavigation.OnTabSelectedListener,
         IPagerCallbacks,
         IDownloaderClient {
 
@@ -88,8 +78,11 @@ public class MainActivity extends AppCompatActivity implements
     private Tutorials tutorials;
     private ExpansionHelper expHelper;
     private Logger log;
+    private boolean showScore;
+    private boolean nightMode;
 
     @BindView(R.id.viewpager) ViewPager viewPager;
+    @BindView(R.id.fabToggleScore) FloatingActionButton fabToggleScore;
     @BindView(R.id.fab) FloatingActionButton fab;
     @BindView(R.id.lvSearchResults) ListView lvSearchResults;
     @BindView(R.id.toolbar) Toolbar toolbar;
@@ -97,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements
     @BindView(R.id.searchBtn_Lyrics) Button  searchBtn_Lyrics;
     @BindView(R.id.searchBtn_Psalm) Button searchBtn_Psalm;
     @BindView(R.id.searchBtn_Psalter) Button searchBtn_Psalter;
-    @BindView(R.id.bottom_navigation) AHBottomNavigation bottomNavigation;
+    //@BindView(R.id.bottom_navigation) AHBottomNavigation bottomNavigation;
     MenuItem searchMenuItem;
     SearchView searchView;
 
@@ -109,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements
 
         // initialize theme (must do this before calling setContentView())
         sPref = getSharedPreferences("settings", MODE_PRIVATE);
-        boolean nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
+        nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
         if(nightMode) setTheme(R.style.AppTheme_Dark);
         else setTheme(R.style.AppTheme_Light);
         setContentView(R.layout.activity_main);
@@ -119,21 +112,11 @@ public class MainActivity extends AppCompatActivity implements
         log = new Logger(this);
         psalterRepository = new PsalterDb(this);
 
-        //initialize bottom nav
-        AHBottomNavigationItem bottomNav_noScore = new AHBottomNavigationItem("", R.drawable.ic_no_score);
-        AHBottomNavigationItem bottomNav_score = new AHBottomNavigationItem("", R.drawable.ic_score);
-        bottomNavigation.addItem(bottomNav_noScore);
-        bottomNavigation.addItem(bottomNav_score);
-        bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_HIDE);
-        bottomNavigation.setDefaultBackgroundColor(getResources().getColor(R.color.colorPrimaryInverse));
-        bottomNavigation.setAccentColor(Color.WHITE);
-        bottomNavigation.setOnTabSelectedListener(this);
-        int bottomNavIndex = sPref.getInt(getString(R.string.pref_bottomnav), 0);
-        bottomNavigation.setCurrentItem(bottomNavIndex, false);
-
+        showScore = sPref.getBoolean(getString(R.string.pref_showScore), false);
+        Helpers.selectFab(showScore, fabToggleScore, nightMode);
         //initialize viewpager
         PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter(this, psalterRepository,
-                this, bottomNavIndex == 1, nightMode);
+                this, showScore, nightMode);
         viewPager.setAdapter(pagerAdapter);
         viewPager.setCurrentItem(sPref.getInt(getString(R.string.pref_lastindex), 0));
 
@@ -149,27 +132,12 @@ public class MainActivity extends AppCompatActivity implements
                 R.string.tutorial_fab_title,
                 R.string.tutorial_fab_description, true);
 
-        //bottomNavigation adds child views extremely late, meaning it's difficult to get a reference to the view.
-        // Use this to tap into after that event
-        bottomNavigation.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                tutorials.showTutorial(bottomNavigation.getViewAtPosition(1),
-                        R.string.pref_tutorialshown_showscore,
-                        R.string.tutorial_showscore_title,
-                        R.string.tutorial_showscore_description);
-                bottomNavigation.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-            }
-        });
-
         //ensure expansion files exist
         expHelper = new ExpansionHelper(this);
         if(!expHelper.expansionFilesDownloaded()){
             downloadExpansionFiles();
         }
     }
-
-
 
     @Override
     protected void onResume() {
@@ -179,8 +147,8 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onStop() {
-        if(downloaderClient != null) downloaderClient.disconnect(this);
         super.onStop();
+        if(downloaderClient != null) downloaderClient.disconnect(this);
     }
 
     @Override
@@ -211,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements
     private void saveState(){
         sPref.edit()
                 .putInt(getString(R.string.pref_lastindex), viewPager.getCurrentItem())
-                .putInt(getString(R.string.pref_bottomnav), bottomNavigation.getCurrentItem())
+                .putBoolean(getString(R.string.pref_showScore), showScore)
                 .apply();
     }
 
@@ -240,22 +208,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
         searchPsalter();
-        return true;
-    }
-
-    @Override
-    public boolean onTabSelected(int position, boolean wasSelected) {
-        if(wasSelected) return false;
-        PsalterPagerAdapter adapter = (PsalterPagerAdapter)viewPager.getAdapter();
-        boolean showScore = position == 1;
-        if(showScore) adapter.showScore();
-        else adapter.hideScore();
-
-        int currentPage = viewPager.getCurrentItem();
-        viewPager.setAdapter(adapter);
-        viewPager.setCurrentItem(currentPage);
-
-        log.changeScore(showScore);
         return true;
     }
 
@@ -435,14 +387,35 @@ public class MainActivity extends AppCompatActivity implements
     }
     private void showSearchButtons(){
         tableButtons.setVisibility(View.VISIBLE);
-        bottomNavigation.setVisibility(View.GONE);
+        fabToggleScore.setVisibility(View.GONE);
         fab.setVisibility(View.GONE);
     }
     private void hideSearchButtons(){
         tableButtons.setVisibility(View.GONE);
-        bottomNavigation.setVisibility(View.VISIBLE);
+        fabToggleScore.setVisibility(View.VISIBLE);
         fab.setVisibility(View.VISIBLE);
     }
+
+    @OnClick(R.id.fabToggleScore)
+    public void toggleScore(){
+        PsalterPagerAdapter adapter = (PsalterPagerAdapter)viewPager.getAdapter();
+        showScore = !showScore;
+        if(showScore) {
+            adapter.showScore();
+            Helpers.selectFab(true, fabToggleScore, nightMode);
+        }
+        else {
+            adapter.hideScore();
+            Helpers.selectFab(false, fabToggleScore, nightMode);
+        }
+
+        int currentPage = viewPager.getCurrentItem();
+        viewPager.setAdapter(adapter);
+        viewPager.setCurrentItem(currentPage);
+
+        log.changeScore(showScore);
+    }
+
 
     @OnClick(R.id.fab)
     public void fabClick() {

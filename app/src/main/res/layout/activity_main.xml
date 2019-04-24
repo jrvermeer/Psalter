@@ -67,18 +67,23 @@
         </TableLayout>
     </LinearLayout>
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabToggleScore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginRight="24dp"
+        android:layout_marginBottom="88dp"
+        android:theme="?attr/secondaryFabStyle"
+        android:src="@drawable/ic_clef_3"
+        app:fabSize="mini"/>
+
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginRight="16dp"
-        android:layout_marginBottom="72dp"
+        android:layout_marginBottom="16dp"
         android:src="@drawable/ic_play_arrow_white_24dp"/>
-    <com.aurelhubert.ahbottomnavigation.AHBottomNavigation
-        android:id="@+id/bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"/>
-
 
 </android.support.design.widget.CoordinatorLayout>

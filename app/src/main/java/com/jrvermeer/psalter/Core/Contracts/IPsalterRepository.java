@@ -2,6 +2,7 @@ package com.jrvermeer.psalter.Core.Contracts;
 
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 
 import com.jrvermeer.psalter.Core.Models.Psalter;
@@ -18,6 +19,6 @@ public interface IPsalterRepository {
     Psalter[] getPsalm(int psalmNumber);
     Psalter[] searchPsalter(String searchText);
     AssetFileDescriptor getAudioDescriptor(Psalter psalter);
-    Drawable getScore(Psalter psalter);
+    BitmapDrawable getScore(Psalter psalter);
 
 }

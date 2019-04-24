@@ -1,6 +1,7 @@
 package com.jrvermeer.psalter.UI.Adaptors;
 
 import android.content.Context;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.v4.view.PagerAdapter;
@@ -52,7 +53,7 @@ public class PsalterPagerAdapter extends PagerAdapter {
             String lyrics = psalter.getLyrics();
             TextView tvLyrics = ((TextView)layout.findViewById(R.id.tvPagerLyrics));
             if(showScore){
-                Drawable score = psalterRepository.getScore(psalter);
+                BitmapDrawable score = psalterRepository.getScore(psalter);
                 if(score != null){
                     if(nightMode) Util.invertColors(score);
                     ((ImageView)layout.findViewById(R.id.imgScore)).setImageDrawable(score);
