@@ -38,18 +38,26 @@ public class Logger {
         FlurryAgent.logEvent(LogEvent.PlayPsalter.name(), params);
     }
 
-    public void searchSubmitted(SearchMode mode, String query){
+    public void searchEvent(SearchMode mode, String query, String psalterChosen){
         Map<String, String> params = new HashMap<>();
-        params.put("SearchMode", mode.name());
-        params.put("Query", query);
-        FlurryAgent.logEvent(LogEvent.SearchSubmitted.name(), params);
-    }
 
-    public void searchResultSelected(String query, String selectedTitle){
-        Map<String, String> params = new HashMap<>();
-        params.put("Query", query);
-        params.put("Number", selectedTitle);
-        FlurryAgent.logEvent(LogEvent.SearchResultSelected.name(), params);
+        LogEvent event;
+        if (mode == SearchMode.Psalter){
+            event  = LogEvent.SearchPsalter;
+            params.put("Psalter", query);
+        }
+        else {
+            if(mode == SearchMode.Psalm){
+                event = LogEvent.SearchPsalm;
+                params.put("Psalm", query);
+            }
+            else { // SearchMode.Lyrics
+                event = LogEvent.SearchLyrics;
+                params.put("Query", query);
+            }
+            params.put("PsalterChosen", psalterChosen);
+        }
+        FlurryAgent.logEvent(event.name(), params);
     }
 
     public void event(LogEvent event){

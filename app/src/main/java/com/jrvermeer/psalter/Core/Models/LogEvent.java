@@ -6,12 +6,13 @@ package com.jrvermeer.psalter.Core.Models;
 
 public enum LogEvent {
     PlayPsalter,
+    ShufflePsalter,
     GoToRandom,
     ChangeTheme,
     ChangeScore,
-    SearchSubmitted,
-    SearchResultSelected,
+    SearchPsalter,
+    SearchPsalm,
+    SearchLyrics,
     ExpansionManualDownload,
     ErrorExpansionDownload
-
 }

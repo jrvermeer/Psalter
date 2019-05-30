@@ -28,7 +28,7 @@ import java.util.ArrayList;
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
-    private static final int DATABASE_VERSION = 23;
+    private static final int DATABASE_VERSION = 24;
     private static final String DATABASE_NAME = "psalter.sqlite";
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
@@ -149,6 +149,6 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
     }
 
     public BitmapDrawable getScore(Psalter psalter){
-        return (BitmapDrawable)expansionHelper.getImage(true, "1912/Score/" + psalter.getScoreFileName());
+        return (BitmapDrawable)expansionHelper.getImage(false, "1912/Score/" + psalter.getScoreFileName());
     }
 }

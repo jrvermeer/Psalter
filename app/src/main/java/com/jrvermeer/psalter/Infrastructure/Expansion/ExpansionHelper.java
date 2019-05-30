@@ -25,7 +25,7 @@ import java.io.InputStream;
 
 public class ExpansionHelper {
     private static final int EXPANSION_MAIN = 20;
-    private static final int EXPANSION_PATCH = 0;
+    private static final int EXPANSION_PATCH = 24;
     private Context context;
 
     public ExpansionHelper(Context context){

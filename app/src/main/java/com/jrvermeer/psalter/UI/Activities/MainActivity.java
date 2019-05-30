@@ -223,6 +223,7 @@ public class MainActivity extends AppCompatActivity implements
                     if(1 <= number && number <= 434){
                         collapseSearchView();
                         goToPsalter(number);
+                        log.searchEvent(searchMode, query, null);
                     }
                     else{
                         Toast.makeText(this, "Pick a number between 1 and 434", Toast.LENGTH_SHORT).show();
@@ -245,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
         searchView.clearFocus();
-        log.searchSubmitted(searchMode, query);
+
         return true;
     }
     @Override
@@ -450,7 +451,7 @@ public class MainActivity extends AppCompatActivity implements
             int num = Integer.parseInt(tvNumber.getText().toString());
 
             //log event before collapsing searchview, so we can log the query text
-            log.searchResultSelected(searchView.getQuery().toString(), String.valueOf(num));
+            log.searchEvent(searchMode, searchView.getQuery().toString(), String.valueOf(num));
 
             collapseSearchView();
             goToPsalter(num);
