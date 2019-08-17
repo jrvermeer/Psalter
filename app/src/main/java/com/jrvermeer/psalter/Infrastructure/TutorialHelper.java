@@ -7,6 +7,7 @@ import android.view.View;
 
 import com.getkeepsafe.taptargetview.TapTarget;
 import com.getkeepsafe.taptargetview.TapTargetSequence;
+import com.jrvermeer.psalter.R;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -14,14 +15,14 @@ import static android.content.Context.MODE_PRIVATE;
  * Created by Jonathan on 6/22/2018.
  */
 
-public class Tutorials implements TapTargetSequence.Listener {
+public class TutorialHelper implements TapTargetSequence.Listener {
     private Activity context;
     private TapTargetSequence targetSequence;
-    SharedPreferences pref;
+    SimpleStorage storage = new SimpleStorage();
 
-    public Tutorials(Activity context){
+
+    public TutorialHelper(Activity context){
         this.context = context;
-        pref = context.getSharedPreferences("settings", MODE_PRIVATE);
     }
 
     private TapTargetSequence getTargetSequence(){
@@ -35,7 +36,7 @@ public class Tutorials implements TapTargetSequence.Listener {
         showTutorial(view, prefTutorialShown, title, description, false);
     }
     public void showTutorial(View view, @StringRes int prefTutorialShown, @StringRes int title, @StringRes int description, boolean transparent){
-        boolean shown = pref.getBoolean(context.getString(prefTutorialShown), false);
+        boolean shown = storage.getBoolean(prefTutorialShown);
         if(!shown && view != null){
             if(targetSequence == null) targetSequence = getTargetSequence();
             targetSequence.target(TapTarget.forView(view,
@@ -43,8 +44,42 @@ public class Tutorials implements TapTargetSequence.Listener {
                     context.getString(description))
             .transparentTarget(transparent));
             targetSequence.start();
-            pref.edit().putBoolean(context.getResources().getString(prefTutorialShown), true).apply();
+            storage.setBoolean(prefTutorialShown, true);
         }
+    }
+
+    public void showShuffleTutorial(View fab){
+        showTutorial(fab,
+                R.string.pref_tutorialshown_fablongpress,
+                R.string.tutorial_fab_title,
+                R.string.tutorial_fab_description, true);
+    }
+
+    public void showShuffleReminderTutorial(View fab){
+        showTutorial(fab, R.string.pref_tutorialshown_fabreminder,
+                R.string.tutorial_fabreminder_title,
+                R.string.tutorial_fabreminder_description,
+                true);
+    }
+
+    public void showShuffleRandomTutorial(View button){
+        showTutorial(button,
+                R.string.pref_tutorialshown_randomWhenShuffling,
+                R.string.tutorial_randomWhenShuffling_title,
+                R.string.tutorial_randomWhenShuffling_description);
+    }
+
+    public void showGoToPsalmTutorial(View view){
+        showTutorial(view,
+                R.string.pref_tutorialshown_gotopsalm,
+                R.string.tutorial_gotopsalm_title,
+                R.string.tutorial_gotopsalm_description);
+    }
+    public void showScoreTutorial(View view){
+        showTutorial(view,
+                R.string.pref_tutorialshown_showscore,
+                R.string.tutorial_showscore_title,
+                R.string.tutorial_showscore_description);
     }
 
     @Override

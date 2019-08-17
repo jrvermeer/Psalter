@@ -23,19 +23,15 @@ import java.util.List;
 
 public class Helpers {
     public static void selectFab(boolean selected, FloatingActionButton fab, boolean nightMode){
-        Drawable drawable = DrawableCompat.wrap(fab.getDrawable());
         int color;
         Resources res = PsalterApplication.getContext().getResources();
         if(selected && nightMode) color = Color.WHITE;
-        else if(selected && !nightMode) color = res.getColor(R.color.colorAccent);
-        else if(!selected && nightMode) color = res.getColor(R.color.colorUnselectedInverse);
-        else /*if(!selected && !nightMode)*/ color = res.getColor(R.color.colorUnselected);
-
-        DrawableCompat.setTint(drawable, color);
-        fab.setImageDrawable(drawable);
+        else if(selected) color = res.getColor(R.color.colorAccent);
+        else if(nightMode) color = res.getColor(R.color.colorUnselectedInverse);
+        else color = res.getColor(R.color.colorUnselected);
+        fab.getDrawable().mutate().setTint(color);
     }
-
-    // get all indexes of a string in another string
+   // get all indexes of a string in another string
     public static List<Integer> allIndexesOf(String lyrics, String query ){
         List<Integer> rtn = new ArrayList<>();
         int index = lyrics.indexOf(query);

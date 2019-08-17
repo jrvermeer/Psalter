@@ -25,9 +25,9 @@
     <string name="tutorial_gotopsalm_title">Click this link to go to Psalm</string>
     <string name="tutorial_gotopsalm_description">The chapter will open in your default browser</string>
 
-    <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore</string>
-    <string name="tutorial_showscore_title">Press this button to show music score</string>
-    <string name="tutorial_showscore_description">It even works well with night mode!</string>
+    <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore_2</string>
+    <string name="tutorial_showscore_title"> New! Updated music score images!</string>
+    <string name="tutorial_showscore_description">This button will toggle them on or off</string>
 
     <string name="pref_tutorialshown_randomWhenShuffling">pref_tutorialshown_randomWhenShuffling</string>
     <string name="tutorial_randomWhenShuffling_title">When shuffling audio, this button will skip to the next random song</string>

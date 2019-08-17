@@ -8,7 +8,6 @@ import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -50,8 +49,9 @@ import com.jrvermeer.psalter.Core.Models.SearchMode;
 import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
 import com.jrvermeer.psalter.Infrastructure.Expansion.PsalterDownloaderService;
 import com.jrvermeer.psalter.Infrastructure.Helpers;
-import com.jrvermeer.psalter.Infrastructure.Logger;
-import com.jrvermeer.psalter.Infrastructure.Tutorials;
+import com.jrvermeer.psalter.Infrastructure.Log;
+import com.jrvermeer.psalter.Infrastructure.SimpleStorage;
+import com.jrvermeer.psalter.Infrastructure.TutorialHelper;
 import com.jrvermeer.psalter.R;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
 import com.jrvermeer.psalter.Infrastructure.MediaService;
@@ -71,15 +71,14 @@ public class MainActivity extends AppCompatActivity implements
         IPagerCallbacks,
         IDownloaderClient {
 
-    private SharedPreferences sPref;
-    private IPsalterRepository psalterRepository;
+    private SimpleStorage storage = new SimpleStorage();
+    private SearchMode searchMode = SearchMode.Psalter;
+    private IPsalterRepository psalterRepository  = new PsalterDb();
     private MediaControllerCompat mediaController;
     private IStub downloaderClient;
-    private Tutorials tutorials;
+    private TutorialHelper tutorials;
     private ExpansionHelper expHelper;
-    private Logger log;
-    private boolean showScore;
-    private boolean nightMode;
+
 
     @BindView(R.id.viewpager) ViewPager viewPager;
     @BindView(R.id.fabToggleScore) FloatingActionButton fabToggleScore;
@@ -90,35 +89,29 @@ public class MainActivity extends AppCompatActivity implements
     @BindView(R.id.searchBtn_Lyrics) Button  searchBtn_Lyrics;
     @BindView(R.id.searchBtn_Psalm) Button searchBtn_Psalm;
     @BindView(R.id.searchBtn_Psalter) Button searchBtn_Psalter;
-    //@BindView(R.id.bottom_navigation) AHBottomNavigation bottomNavigation;
     MenuItem searchMenuItem;
     SearchView searchView;
 
-    private SearchMode searchMode = SearchMode.Psalter;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // initialize theme (must do this before calling setContentView())
-        sPref = getSharedPreferences("settings", MODE_PRIVATE);
-        nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
-        if(nightMode) setTheme(R.style.AppTheme_Dark);
+        // must initialize theme before calling setContentView()
+        if(storage.isNightMode()) setTheme(R.style.AppTheme_Dark);
         else setTheme(R.style.AppTheme_Light);
+
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         setSupportActionBar(toolbar);
 
-        log = new Logger(this);
-        psalterRepository = new PsalterDb(this);
-
-        showScore = sPref.getBoolean(getString(R.string.pref_showScore), false);
-        Helpers.selectFab(showScore, fabToggleScore, nightMode);
+        Helpers.selectFab(storage.scoreShown(), fabToggleScore, storage.isNightMode());
         //initialize viewpager
         PsalterPagerAdapter pagerAdapter = new PsalterPagerAdapter(this, psalterRepository,
-                this, showScore, nightMode);
+                this, storage.scoreShown(), storage.isNightMode());
         viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(sPref.getInt(getString(R.string.pref_lastindex), 0));
+        viewPager.setCurrentItem(storage.getPageIndex());
 
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, psalterRepository));
 
@@ -126,11 +119,9 @@ public class MainActivity extends AppCompatActivity implements
         Intent intent = new Intent(this, MediaService.class);
         bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
 
-        tutorials = new Tutorials(this);
-        tutorials.showTutorial(fab,
-                R.string.pref_tutorialshown_fablongpress,
-                R.string.tutorial_fab_title,
-                R.string.tutorial_fab_description, true);
+        tutorials = new TutorialHelper(this);
+        tutorials.showShuffleTutorial(fab);
+        tutorials.showScoreTutorial(fabToggleScore);
 
         //ensure expansion files exist
         expHelper = new ExpansionHelper(this);
@@ -177,18 +168,14 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void saveState(){
-        sPref.edit()
-                .putInt(getString(R.string.pref_lastindex), viewPager.getCurrentItem())
-                .putBoolean(getString(R.string.pref_showScore), showScore)
-                .apply();
+        storage.setPageIndex(viewPager.getCurrentItem());
     }
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.menu_options, menu);
 
-        boolean nightMode = sPref.getBoolean(getString(R.string.pref_nightmode), false);
-        menu.findItem(R.id.action_nightmode).setChecked(nightMode);
+        menu.findItem(R.id.action_nightmode).setChecked(storage.isNightMode());
 
         searchMenuItem = menu.findItem(R.id.action_search);
         searchView = (SearchView)searchMenuItem.getActionView();
@@ -223,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements
                     if(1 <= number && number <= 434){
                         collapseSearchView();
                         goToPsalter(number);
-                        log.searchEvent(searchMode, query, null);
+                        Log.searchEvent(searchMode, query, null);
                     }
                     else{
                         Toast.makeText(this, "Pick a number between 1 and 434", Toast.LENGTH_SHORT).show();
@@ -310,10 +297,9 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if(id == R.id.action_nightmode){
-            boolean nightMode = !item.isChecked(); //checked property must be updated manually, so new value is opposite of old value
-            sPref.edit().putBoolean(getString(R.string.pref_nightmode), nightMode).apply();
+            boolean nightMode = storage.toggleNightMode();
             item.setChecked(nightMode);
-            log.changeTheme(nightMode);
+            Log.changeTheme(nightMode);
 
             if(Build.VERSION.SDK_INT == 23){ // framework bug in api 23 calling recreate inside onOptionsItemSelected.
                 finish();
@@ -330,13 +316,10 @@ public class MainActivity extends AppCompatActivity implements
                 Psalter psalter = psalterRepository.getRandom();
                 viewPager.setCurrentItem(psalter.getId(), true);
             }
-            log.event(LogEvent.GoToRandom);
+            Log.event(LogEvent.GoToRandom);
         }
         else if(id == R.id.action_shuffle) {
-            tutorials.showTutorial(fab, R.string.pref_tutorialshown_fabreminder,
-                    R.string.tutorial_fabreminder_title,
-                    R.string.tutorial_fabreminder_description,
-                    true);
+            tutorials.showShuffleReminderTutorial(fab);
             shuffle();
         }
         else if(id == R.id.action_rate){
@@ -376,45 +359,44 @@ public class MainActivity extends AppCompatActivity implements
     private void showSearchResultsScreen(){
         lvSearchResults.setVisibility(View.VISIBLE);
         viewPager.setVisibility(View.GONE);
-        fab.setVisibility(View.GONE);
+        fab.hide();
     }
     private void hideSearchResultsScreen(){
         lvSearchResults.setVisibility(View.GONE);
         viewPager.setVisibility(View.VISIBLE);
-        fab.setVisibility(View.VISIBLE);
+        fab.show();
     }
     private void collapseSearchView(){
         if(searchMenuItem != null && searchMenuItem.isActionViewExpanded()) searchMenuItem.collapseActionView();
     }
     private void showSearchButtons(){
         tableButtons.setVisibility(View.VISIBLE);
-        fabToggleScore.setVisibility(View.GONE);
-        fab.setVisibility(View.GONE);
+        fabToggleScore.hide();
+        fab.hide();
     }
     private void hideSearchButtons(){
         tableButtons.setVisibility(View.GONE);
-        fabToggleScore.setVisibility(View.VISIBLE);
-        fab.setVisibility(View.VISIBLE);
+        fabToggleScore.show();
+        fab.show();
     }
 
     @OnClick(R.id.fabToggleScore)
     public void toggleScore(){
         PsalterPagerAdapter adapter = (PsalterPagerAdapter)viewPager.getAdapter();
-        showScore = !showScore;
-        if(showScore) {
+        if(storage.toggleScore()) {
             adapter.showScore();
-            Helpers.selectFab(true, fabToggleScore, nightMode);
+            Helpers.selectFab(true, fabToggleScore, storage.isNightMode());
         }
         else {
             adapter.hideScore();
-            Helpers.selectFab(false, fabToggleScore, nightMode);
+            Helpers.selectFab(false, fabToggleScore, storage.isNightMode());
         }
 
         int currentPage = viewPager.getCurrentItem();
         viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(currentPage);
 
-        log.changeScore(showScore);
+        Log.changeScore(storage.scoreShown());
     }
 
 
@@ -427,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements
             Psalter psalter = getSelectedPsalter();
             mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_NONE);
             mediaController.getTransportControls().playFromMediaId(String.valueOf(psalter.getId()), null);
-            log.playbackStarted(psalter.getTitle(), false);
+            Log.playbackStarted(psalter.getTitle(), false);
         }
     }
     @OnLongClick(R.id.fab)
@@ -435,12 +417,9 @@ public class MainActivity extends AppCompatActivity implements
         Psalter psalter = getSelectedPsalter();
         mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
         mediaController.getTransportControls().playFromMediaId(String.valueOf(psalter.getId()), null);
-        log.playbackStarted(psalter.getTitle(), true);
+        Log.playbackStarted(psalter.getTitle(), true);
 
-        tutorials.showTutorial(toolbar.findViewById(R.id.action_random),
-                R.string.pref_tutorialshown_randomWhenShuffling,
-                R.string.tutorial_randomWhenShuffling_title,
-                R.string.tutorial_randomWhenShuffling_description);
+        tutorials.showShuffleRandomTutorial(toolbar.findViewById(R.id.action_random));
         return true;
     }
 
@@ -451,7 +430,7 @@ public class MainActivity extends AppCompatActivity implements
             int num = Integer.parseInt(tvNumber.getText().toString());
 
             //log event before collapsing searchview, so we can log the query text
-            log.searchEvent(searchMode, searchView.getQuery().toString(), String.valueOf(num));
+            Log.searchEvent(searchMode, searchView.getQuery().toString(), String.valueOf(num));
 
             collapseSearchView();
             goToPsalter(num);
@@ -463,11 +442,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void pageCreated(View page, int position) {
         if(position == viewPager.getCurrentItem()){
-            tutorials.showTutorial(page.findViewById(R.id.tvPagerPsalm),
-                    R.string.pref_tutorialshown_gotopsalm,
-                    R.string.tutorial_gotopsalm_title,
-                    R.string.tutorial_gotopsalm_description);
-            //showTutorialsOnStart(page.findViewById(R.id.tvPagerPsalm), bottomNavigation.getViewAtPosition(1));
+            tutorials.showGoToPsalmTutorial(page.findViewById(R.id.tvPagerPsalm));
         }
     }
 
@@ -502,10 +477,14 @@ public class MainActivity extends AppCompatActivity implements
     MediaControllerCompat.Callback callback = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
+            // stupid ass bug, setting images fails after toggling night mode. https://stackoverflow.com/a/52158081
+            boolean show = fab.isShown();
+            fab.hide();
             if(state.getState() == PlaybackStateCompat.STATE_PLAYING){
                 fab.setImageResource(R.drawable.ic_stop_white_24dp);
             }
             else fab.setImageResource(R.drawable.ic_play_arrow_white_24dp);
+            if(show) fab.show();
         }
 
         @Override
@@ -558,7 +537,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void performDownloadExpansionFiles(){
         try{
-            log.event(LogEvent.ExpansionManualDownload);
+            Log.event(LogEvent.ExpansionManualDownload);
             Intent notifierIntent = new Intent(this, MainActivity.class);
             notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
                     Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -572,15 +551,10 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
         catch (Exception ex){
-            log.error(ex);
+            Log.error(ex);
             Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
         }
     }
-    @Override
-    public void onServiceConnected(Messenger m) {
-
-    }
-
     @Override
     public void onDownloadStateChanged(int newState) {
         if(newState == IDownloaderClient.STATE_COMPLETED){
@@ -598,9 +572,6 @@ public class MainActivity extends AppCompatActivity implements
                     .show();
         }
     }
-
-    @Override
-    public void onDownloadProgress(DownloadProgressInfo progress) {
-
-    }
+    @Override public void onDownloadProgress(DownloadProgressInfo progress) { }
+    @Override public void onServiceConnected(Messenger m) { }
 }

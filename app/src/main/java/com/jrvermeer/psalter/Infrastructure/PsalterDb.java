@@ -7,18 +7,14 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.DrawableWrapper;
-import android.os.Environment;
 import android.widget.Toast;
 
-import com.android.vending.expansion.zipfile.APKExpansionSupport;
-import com.android.vending.expansion.zipfile.ZipResourceFile;
 import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
 import com.jrvermeer.psalter.R;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
 import com.jrvermeer.psalter.Core.Models.Psalter;
 import com.jrvermeer.psalter.Core.Models.SqLiteQuery;
+import com.jrvermeer.psalter.UI.PsalterApplication;
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper;
 
 import java.util.ArrayList;
@@ -28,16 +24,15 @@ import java.util.ArrayList;
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
-    private static final int DATABASE_VERSION = 24;
+    private static final int DATABASE_VERSION = 25;
     private static final String DATABASE_NAME = "psalter.sqlite";
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
-    private Context context;
+    private Context context = PsalterApplication.getContext();
     private ExpansionHelper expansionHelper;
 
-    public PsalterDb(final Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        this.context = context;
+    public PsalterDb() {
+        super(PsalterApplication.getContext(), DATABASE_NAME, null, DATABASE_VERSION);
         setForcedUpgrade(DATABASE_VERSION);
         db = getReadableDatabase();
         expansionHelper = new ExpansionHelper(context);

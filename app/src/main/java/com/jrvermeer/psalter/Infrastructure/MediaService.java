@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.AssetFileDescriptor;
-import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -46,13 +45,12 @@ public class MediaService extends Service
             MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
     private MediaBinder mBinder = new MediaBinder();
 
-    private IPsalterRepository psalterRepository;
+    private IPsalterRepository psalterRepository = new PsalterDb();;
     private AudioManager audioManager;
     private AudioFocusRequest audioFocusRequest = null;
     private NotificationManagerCompat notificationManager;
     private MediaPlayer mediaPlayer = new MediaPlayer();
     private Handler handler = new Handler();
-    private Logger logger;
 
     private MediaSessionCompat mediaSession;
     private MediaControllerCompat.TransportControls controls;
@@ -76,14 +74,12 @@ public class MediaService extends Service
         audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
         notificationManager = NotificationManagerCompat.from(this);
         createNotificationChannel();
-        psalterRepository = new PsalterDb(this);
         mediaPlayer.setOnCompletionListener(this);
         mediaSession = new MediaSessionCompat(this, "MediaService");
         mediaSession.setCallback(mMediaSessionCallback);
         mediaSession.setFlags( MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS );
         controls = mediaSession.getController().getTransportControls();
         updatePlaybackState(PlaybackStateCompat.STATE_NONE);
-        logger = new Logger(this);
     }
 
     @Override
@@ -416,7 +412,7 @@ public class MediaService extends Service
     @Override
     public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
         mediaPlayer.reset();
-        logger.error("MediaPlayer error.");
+        Log.error("MediaPlayer error.");
         return false;
     }
 

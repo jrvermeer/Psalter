@@ -6,6 +6,7 @@ import com.flurry.android.FlurryAgent;
 import com.jrvermeer.psalter.Core.Models.LogEvent;
 import com.jrvermeer.psalter.Core.Models.SearchMode;
 import com.jrvermeer.psalter.R;
+import com.jrvermeer.psalter.UI.PsalterApplication;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,31 +15,33 @@ import java.util.Map;
  * Created by Jonathan on 7/17/2018.
  */
 
-public class Logger {
+public class Log {
+    private Log() { }
 
-    public Logger(Context context){
+    static {
+        Context c =  PsalterApplication.getContext();
         new FlurryAgent.Builder()
                 .withLogEnabled(true)
-                .build(context, context.getResources().getString(R.string.secret_flurry));
+                .build(c, c.getResources().getString(R.string.secret_flurry));
     }
-    public void changeScore(boolean scoreVisible){
+    public static void changeScore(boolean scoreVisible){
         Map<String, String> params = new HashMap<>();
         params.put("ScoreVisible", String.valueOf(scoreVisible));
         FlurryAgent.logEvent(LogEvent.ChangeScore.name(), params);
     }
-    public void changeTheme(boolean nightMode){
+    public static void changeTheme(boolean nightMode){
         Map<String, String> params = new HashMap<>();
         params.put("NightMode", String.valueOf(nightMode));
         FlurryAgent.logEvent(LogEvent.ChangeTheme.name(), params);
     }
-    public void playbackStarted(String numberTitle, boolean shuffling){
+    public static void playbackStarted(String numberTitle, boolean shuffling){
         Map<String, String> params = new HashMap<>();
         params.put("Number", numberTitle);
         params.put("Shuffling", String.valueOf(shuffling));
         FlurryAgent.logEvent(LogEvent.PlayPsalter.name(), params);
     }
 
-    public void searchEvent(SearchMode mode, String query, String psalterChosen){
+    public static void searchEvent(SearchMode mode, String query, String psalterChosen){
         Map<String, String> params = new HashMap<>();
 
         LogEvent event;
@@ -60,13 +63,13 @@ public class Logger {
         FlurryAgent.logEvent(event.name(), params);
     }
 
-    public void event(LogEvent event){
+    public static void event(LogEvent event){
         FlurryAgent.logEvent(event.name());
     }
-    public void error(Throwable ex){
+    public static void error(Throwable ex){
         FlurryAgent.onError("Error", "", ex);
     }
-    public void error(String message){
+    public static void error(String message){
         FlurryAgent.onError("Error", message, "");
     }
 }
