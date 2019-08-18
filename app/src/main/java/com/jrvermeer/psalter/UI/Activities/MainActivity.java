@@ -1,23 +1,30 @@
 package com.jrvermeer.psalter.UI.Activities;
 
-import android.Manifest;
-import android.app.AlertDialog;
-import android.app.PendingIntent;
+import com.jrvermeer.psalter.BuildConfig;
+import com.jrvermeer.psalter.Core.Contracts.IPagerCallbacks;
+import com.jrvermeer.psalter.Core.Models.LogEvent;
+import com.jrvermeer.psalter.Core.Models.Psalter;
+import com.jrvermeer.psalter.Core.Models.SearchMode;
+import com.jrvermeer.psalter.Infrastructure.Helpers;
+import com.jrvermeer.psalter.Infrastructure.Log;
+import com.jrvermeer.psalter.Infrastructure.SimpleStorage;
+import com.jrvermeer.psalter.Infrastructure.TutorialHelper;
+import com.jrvermeer.psalter.R;
+import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
+import com.jrvermeer.psalter.Infrastructure.MediaService;
+import com.jrvermeer.psalter.Infrastructure.PsalterDb;
+import com.jrvermeer.psalter.UI.Adaptors.PsalterPagerAdapter;
+import com.jrvermeer.psalter.UI.Adaptors.PsalterSearchAdapter;
+
 import android.app.Service;
 import android.content.ComponentName;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.Messenger;
 import android.os.RemoteException;
-import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -37,28 +44,6 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.vending.expansion.downloader.DownloadProgressInfo;
-import com.google.android.vending.expansion.downloader.DownloaderClientMarshaller;
-import com.google.android.vending.expansion.downloader.IDownloaderClient;
-import com.google.android.vending.expansion.downloader.IStub;
-import com.jrvermeer.psalter.BuildConfig;
-import com.jrvermeer.psalter.Core.Contracts.IPagerCallbacks;
-import com.jrvermeer.psalter.Core.Models.LogEvent;
-import com.jrvermeer.psalter.Core.Models.Psalter;
-import com.jrvermeer.psalter.Core.Models.SearchMode;
-import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
-import com.jrvermeer.psalter.Infrastructure.Expansion.PsalterDownloaderService;
-import com.jrvermeer.psalter.Infrastructure.Helpers;
-import com.jrvermeer.psalter.Infrastructure.Log;
-import com.jrvermeer.psalter.Infrastructure.SimpleStorage;
-import com.jrvermeer.psalter.Infrastructure.TutorialHelper;
-import com.jrvermeer.psalter.R;
-import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
-import com.jrvermeer.psalter.Infrastructure.MediaService;
-import com.jrvermeer.psalter.Infrastructure.PsalterDb;
-import com.jrvermeer.psalter.UI.Adaptors.PsalterPagerAdapter;
-import com.jrvermeer.psalter.UI.Adaptors.PsalterSearchAdapter;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -68,17 +53,13 @@ import butterknife.OnPageChange;
 
 public class MainActivity extends AppCompatActivity implements
         SearchView.OnQueryTextListener,
-        IPagerCallbacks,
-        IDownloaderClient {
+        IPagerCallbacks {
 
     private SimpleStorage storage = new SimpleStorage();
     private SearchMode searchMode = SearchMode.Psalter;
     private IPsalterRepository psalterRepository  = new PsalterDb();
     private MediaControllerCompat mediaController;
-    private IStub downloaderClient;
     private TutorialHelper tutorials;
-    private ExpansionHelper expHelper;
-
 
     @BindView(R.id.viewpager) ViewPager viewPager;
     @BindView(R.id.fabToggleScore) FloatingActionButton fabToggleScore;
@@ -91,8 +72,6 @@ public class MainActivity extends AppCompatActivity implements
     @BindView(R.id.searchBtn_Psalter) Button searchBtn_Psalter;
     MenuItem searchMenuItem;
     SearchView searchView;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,30 +101,11 @@ public class MainActivity extends AppCompatActivity implements
         tutorials = new TutorialHelper(this);
         tutorials.showShuffleTutorial(fab);
         tutorials.showScoreTutorial(fabToggleScore);
-
-        //ensure expansion files exist
-        expHelper = new ExpansionHelper(this);
-        if(!expHelper.expansionFilesDownloaded()){
-            downloadExpansionFiles();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        if(downloaderClient != null) downloaderClient.connect(this);
-        super.onResume();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if(downloaderClient != null) downloaderClient.disconnect(this);
     }
 
     @Override
     protected void onDestroy() {
         // onSaveInstanceState is not called when using back button to close application
-        saveState();
         if(isFinishing()){
             mediaController.getTransportControls().stop();
             unbindService(mConnection);
@@ -155,20 +115,8 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onBackPressed(){
-        if(lvSearchResults.getVisibility() == View.VISIBLE){
-            collapseSearchView();
-        }
+        if(lvSearchResults.isShown()) {  collapseSearchView(); }
         else super.onBackPressed();
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        saveState();
-        super.onSaveInstanceState(outState);
-    }
-
-    private void saveState(){
-        storage.setPageIndex(viewPager.getCurrentItem());
     }
 
     @Override
@@ -448,6 +396,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @OnPageChange(value = R.id.viewpager)
     public void onPageSelected(int index) {
+        storage.setPageIndex(index);
         if(mediaController != null && mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING //if media is playing
                 && !mediaController.getMetadata().getDescription().getMediaId().equals(String.valueOf(index))){ // and it's not the media for current page
             mediaController.getTransportControls().stop();
@@ -477,14 +426,15 @@ public class MainActivity extends AppCompatActivity implements
     MediaControllerCompat.Callback callback = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            // stupid ass bug, setting images fails after toggling night mode. https://stackoverflow.com/a/52158081
-            boolean show = fab.isShown();
-            fab.hide();
             if(state.getState() == PlaybackStateCompat.STATE_PLAYING){
                 fab.setImageResource(R.drawable.ic_stop_white_24dp);
             }
             else fab.setImageResource(R.drawable.ic_play_arrow_white_24dp);
-            if(show) fab.show();
+
+            if(fab.isShown()) {  // stupid ass bug, setting images fails after toggling night mode. https://stackoverflow.com/a/52158081
+                fab.hide();
+                fab.show();
+            }
         }
 
         @Override
@@ -495,83 +445,4 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     };
-
-    private static int WRITE_STORAGE = 1;
-    private void downloadExpansionFiles() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            AlertDialog.Builder builder;
-            if(Build.VERSION.SDK_INT >= 21){
-                builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog);
-            }
-            else builder = new AlertDialog.Builder(this, android.R.style.Theme_Holo_Dialog);
-
-            builder.setMessage(R.string.request_writestorage_message)
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            ActivityCompat.requestPermissions(MainActivity.this,
-                                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                                    WRITE_STORAGE);
-                        }
-                    })
-                .setCancelable(false)
-                .show();
-        }
-        else{
-            performDownloadExpansionFiles();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == WRITE_STORAGE){
-            if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                performDownloadExpansionFiles();
-            }
-            else {
-                Toast.makeText(this, "Fine, enjoy your featureless app!", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    private void performDownloadExpansionFiles(){
-        try{
-            Log.event(LogEvent.ExpansionManualDownload);
-            Intent notifierIntent = new Intent(this, MainActivity.class);
-            notifierIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
-                    notifierIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            int startResult = DownloaderClientMarshaller.startDownloadServiceIfRequired(this,
-                    pendingIntent, PsalterDownloaderService.class);
-            if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED) {
-                downloaderClient = DownloaderClientMarshaller.CreateStub(this, PsalterDownloaderService.class);
-            }
-        }
-        catch (Exception ex){
-            Log.error(ex);
-            Toast.makeText(this, "Error downloading music and audio files", Toast.LENGTH_SHORT).show();
-        }
-    }
-    @Override
-    public void onDownloadStateChanged(int newState) {
-        if(newState == IDownloaderClient.STATE_COMPLETED){
-            AlertDialog.Builder builder;
-            if(Build.VERSION.SDK_INT >= 21){
-                builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog);
-            }
-            else builder = new AlertDialog.Builder(this, android.R.style.Theme_Holo_Dialog);
-
-            builder.setMessage(R.string.download_complete_message)
-                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) { }
-                    })
-                    .show();
-        }
-    }
-    @Override public void onDownloadProgress(DownloadProgressInfo progress) { }
-    @Override public void onServiceConnected(Messenger m) { }
 }

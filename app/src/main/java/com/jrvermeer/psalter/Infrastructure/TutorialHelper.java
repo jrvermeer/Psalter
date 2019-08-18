@@ -1,15 +1,12 @@
 package com.jrvermeer.psalter.Infrastructure;
 
 import android.app.Activity;
-import android.content.SharedPreferences;
 import android.support.annotation.StringRes;
 import android.view.View;
 
 import com.getkeepsafe.taptargetview.TapTarget;
 import com.getkeepsafe.taptargetview.TapTargetSequence;
 import com.jrvermeer.psalter.R;
-
-import static android.content.Context.MODE_PRIVATE;
 
 /**
  * Created by Jonathan on 6/22/2018.
@@ -79,7 +76,7 @@ public class TutorialHelper implements TapTargetSequence.Listener {
         showTutorial(view,
                 R.string.pref_tutorialshown_showscore,
                 R.string.tutorial_showscore_title,
-                R.string.tutorial_showscore_description);
+                R.string.tutorial_showscore_description, true);
     }
 
     @Override

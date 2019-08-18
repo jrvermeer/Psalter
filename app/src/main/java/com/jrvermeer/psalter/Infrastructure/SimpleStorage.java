@@ -2,7 +2,6 @@ package com.jrvermeer.psalter.Infrastructure;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 
 import com.jrvermeer.psalter.R;

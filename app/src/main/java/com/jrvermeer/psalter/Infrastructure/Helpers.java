@@ -1,18 +1,11 @@
 package com.jrvermeer.psalter.Infrastructure;
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Color;
-import android.graphics.ColorFilter;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
-import android.support.annotation.ColorInt;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.graphics.drawable.DrawableCompat;
-
 import com.jrvermeer.psalter.R;
 import com.jrvermeer.psalter.UI.PsalterApplication;
+
+import android.content.res.Resources;
+import android.graphics.Color;
+import android.support.design.widget.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;

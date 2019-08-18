@@ -7,9 +7,9 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.widget.Toast;
 
-import com.jrvermeer.psalter.Infrastructure.Expansion.ExpansionHelper;
 import com.jrvermeer.psalter.R;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
 import com.jrvermeer.psalter.Core.Models.Psalter;
@@ -29,13 +29,11 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
     private static  final String TABLE_NAME = "psalter";
     private SQLiteDatabase db;
     private Context context = PsalterApplication.getContext();
-    private ExpansionHelper expansionHelper;
 
     public PsalterDb() {
         super(PsalterApplication.getContext(), DATABASE_NAME, null, DATABASE_VERSION);
         setForcedUpgrade(DATABASE_VERSION);
         db = getReadableDatabase();
-        expansionHelper = new ExpansionHelper(context);
     }
 
     public int getCount(){
@@ -135,15 +133,19 @@ public class PsalterDb extends SQLiteAssetHelper implements IPsalterRepository {
     }
 
     public AssetFileDescriptor getAudioDescriptor(Psalter psalter) {
-        AssetFileDescriptor afd = expansionHelper.getAudioDescriptor(true, "1912/Audio/" + psalter.getAudioFileName());
-
-        if(afd == null){
-            Toast.makeText(context, "Audio not available for " + psalter.getTitle(), Toast.LENGTH_SHORT).show();
+        try {
+            return context.getAssets().openFd("Audio/" + psalter.getAudioFileName());
+        } catch (Exception ex){
+            return  null;
         }
-        return afd;
     }
 
     public BitmapDrawable getScore(Psalter psalter){
-        return (BitmapDrawable)expansionHelper.getImage(false, "1912/Score/" + psalter.getScoreFileName());
+        try {
+            return (BitmapDrawable)Drawable.createFromStream(context.getAssets().open("Score/" + psalter.getScoreFileName()), null);
+        }
+        catch(Exception ex) {
+            return null;
+        }
     }
 }

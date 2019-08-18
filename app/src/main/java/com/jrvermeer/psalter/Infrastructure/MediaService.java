@@ -325,7 +325,7 @@ public class MediaService extends Service
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, psalter.getSubtitleText())
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "The Psalter")
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, psalter.getSubtitleText())
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, String.format("Verse %d of %d", currentVerse, psalter.getNumverses()))
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, "Verse " + currentVerse + " of " + psalter.getNumverses())
                 .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, psalterRepository.getScore(psalter).getBitmap())
                 .build());
     }
