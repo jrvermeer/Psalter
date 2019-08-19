@@ -6,7 +6,7 @@ import com.jrvermeer.psalter.Core.Models.LogEvent;
 import com.jrvermeer.psalter.Core.Models.Psalter;
 import com.jrvermeer.psalter.Core.Models.SearchMode;
 import com.jrvermeer.psalter.Infrastructure.Helpers;
-import com.jrvermeer.psalter.Infrastructure.Log;
+import com.jrvermeer.psalter.Infrastructure.Logger;
 import com.jrvermeer.psalter.Infrastructure.SimpleStorage;
 import com.jrvermeer.psalter.Infrastructure.TutorialHelper;
 import com.jrvermeer.psalter.R;
@@ -15,6 +15,7 @@ import com.jrvermeer.psalter.Infrastructure.MediaService;
 import com.jrvermeer.psalter.Infrastructure.PsalterDb;
 import com.jrvermeer.psalter.UI.Adaptors.PsalterPagerAdapter;
 import com.jrvermeer.psalter.UI.Adaptors.PsalterSearchAdapter;
+import com.jrvermeer.psalter.UI.PsalterApplication;
 
 import android.app.Service;
 import android.content.ComponentName;
@@ -94,23 +95,22 @@ public class MainActivity extends AppCompatActivity implements
 
         lvSearchResults.setAdapter(new PsalterSearchAdapter(this, psalterRepository));
 
-        // initialize media service
-        Intent intent = new Intent(this, MediaService.class);
-        bindService(intent, mConnection, Service.BIND_AUTO_CREATE);
-
         tutorials = new TutorialHelper(this);
         tutorials.showShuffleTutorial(fab);
         tutorials.showScoreTutorial(fabToggleScore);
     }
 
     @Override
-    protected void onDestroy() {
-        // onSaveInstanceState is not called when using back button to close application
-        if(isFinishing()){
-            mediaController.getTransportControls().stop();
-            unbindService(mConnection);
-        }
-        super.onDestroy();
+    protected void onResume(){
+        super.onResume();
+        // initialize media service
+        bindService(new Intent(PsalterApplication.getContext(), MediaService.class), mConnection, Service.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unbindService(mConnection);
     }
 
     @Override
@@ -158,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements
                     if(1 <= number && number <= 434){
                         collapseSearchView();
                         goToPsalter(number);
-                        Log.searchEvent(searchMode, query, null);
+                        Logger.searchEvent(searchMode, query, null);
                     }
                     else{
                         Toast.makeText(this, "Pick a number between 1 and 434", Toast.LENGTH_SHORT).show();
@@ -247,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements
         if(id == R.id.action_nightmode){
             boolean nightMode = storage.toggleNightMode();
             item.setChecked(nightMode);
-            Log.changeTheme(nightMode);
+            Logger.changeTheme(nightMode);
 
             if(Build.VERSION.SDK_INT == 23){ // framework bug in api 23 calling recreate inside onOptionsItemSelected.
                 finish();
@@ -264,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements
                 Psalter psalter = psalterRepository.getRandom();
                 viewPager.setCurrentItem(psalter.getId(), true);
             }
-            Log.event(LogEvent.GoToRandom);
+            Logger.event(LogEvent.GoToRandom);
         }
         else if(id == R.id.action_shuffle) {
             tutorials.showShuffleReminderTutorial(fab);
@@ -344,9 +344,8 @@ public class MainActivity extends AppCompatActivity implements
         viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(currentPage);
 
-        Log.changeScore(storage.scoreShown());
+        Logger.changeScore(storage.scoreShown());
     }
-
 
     @OnClick(R.id.fab)
     public void fabClick() {
@@ -355,17 +354,15 @@ public class MainActivity extends AppCompatActivity implements
         }
         else {
             Psalter psalter = getSelectedPsalter();
-            mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_NONE);
-            mediaController.getTransportControls().playFromMediaId(String.valueOf(psalter.getId()), null);
-            Log.playbackStarted(psalter.getTitle(), false);
+            startService(MediaService.getStartIntent(psalter, false));
+            Logger.playbackStarted(psalter.getTitle(), false);
         }
     }
     @OnLongClick(R.id.fab)
     public boolean shuffle(){
         Psalter psalter = getSelectedPsalter();
-        mediaController.getTransportControls().setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
-        mediaController.getTransportControls().playFromMediaId(String.valueOf(psalter.getId()), null);
-        Log.playbackStarted(psalter.getTitle(), true);
+        startService(MediaService.getStartIntent(psalter, true));
+        Logger.playbackStarted(psalter.getTitle(), true);
 
         tutorials.showShuffleRandomTutorial(toolbar.findViewById(R.id.action_random));
         return true;
@@ -378,7 +375,7 @@ public class MainActivity extends AppCompatActivity implements
             int num = Integer.parseInt(tvNumber.getText().toString());
 
             //log event before collapsing searchview, so we can log the query text
-            Log.searchEvent(searchMode, searchView.getQuery().toString(), String.valueOf(num));
+            Logger.searchEvent(searchMode, searchView.getQuery().toString(), String.valueOf(num));
 
             collapseSearchView();
             goToPsalter(num);
@@ -414,9 +411,7 @@ public class MainActivity extends AppCompatActivity implements
                 mediaController.registerCallback(callback);
                 callback.onPlaybackStateChanged(mediaController.getPlaybackState());
             }
-            catch (RemoteException ex){
-
-            }
+            catch (RemoteException ex){ }
         }
 
         @Override

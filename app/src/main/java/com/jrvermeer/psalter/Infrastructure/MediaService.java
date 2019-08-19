@@ -28,6 +28,7 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.media.app.NotificationCompat.MediaStyle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
@@ -35,6 +36,7 @@ import com.jrvermeer.psalter.Core.Models.Psalter;
 import com.jrvermeer.psalter.Core.Util;
 import com.jrvermeer.psalter.UI.Activities.MainActivity;
 import com.jrvermeer.psalter.R;
+import com.jrvermeer.psalter.UI.PsalterApplication;
 
 /**
  * Created by Jonathan on 4/3/2017.
@@ -64,10 +66,21 @@ public class MediaService extends Service
     private static String NOTIFICATION_CHANNEL_ID = "DefaultChannel";
     private static String NOTIFICATION_CHANNEL_NAME = "Playback Notification";
 
-    private static final String ACTION_STOP = "ACTION_STOP";
-    private static final String ACTION_NEXT = "ACTION_NEXT";
-    private static final String ACTION_PLAY = "ACTION_PLAY";
-    public static final String ACTION_PLAY_SHUFFLE = "ACTION_PLAY_SHUFFLE";
+    private static final String ACTION_STOP = "ACTION_STOP"; // stop from notification
+    private static final String ACTION_NEXT = "ACTION_NEXT"; // next # from notification
+    private static final String ACTION_PLAY = "ACTION_PLAY"; // play (resume) from notification
+    private static final String ACTION_DELETE = "ACTION_DELETE"; // notification removed
+
+    private static final String ACTION_START = "ACTION_START"; // start new number from UI
+    private static final String EXTRA_MEDIA_ID = "EXTRA_MEDIA_ID";
+    private static final String EXTRA_SHUFFLING = "EXTRA_SHUFFLING";
+
+    public static Intent getStartIntent(Psalter psalter, boolean shuffling){
+        return new Intent(PsalterApplication.getContext(), MediaService.class)
+                .setAction(ACTION_START)
+                .putExtra(EXTRA_MEDIA_ID, psalter.getId())
+                .putExtra(EXTRA_SHUFFLING, shuffling);
+    }
 
     @Override
     public void onCreate() {
@@ -75,15 +88,18 @@ public class MediaService extends Service
         notificationManager = NotificationManagerCompat.from(this);
         createNotificationChannel();
         mediaPlayer.setOnCompletionListener(this);
+
         mediaSession = new MediaSessionCompat(this, "MediaService");
         mediaSession.setCallback(mMediaSessionCallback);
         mediaSession.setFlags( MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS );
+
         controls = mediaSession.getController().getTransportControls();
         updatePlaybackState(PlaybackStateCompat.STATE_NONE);
     }
 
     @Override
     public void onDestroy(){
+        Logger.d("Destroying MediaService");
         mediaPlayer.release();
         notificationManager.cancelAll();
     }
@@ -108,23 +124,30 @@ public class MediaService extends Service
                 else if(action.equals(ACTION_PLAY)){
                     controls.play();
                 }
-                else if(action.equals(ACTION_PLAY_SHUFFLE)){
-                    controls.setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
-                    controls.skipToNext();
+                else if(action.equals(ACTION_DELETE)){
+                    stopSelf();
+                }
+                else if(action.equals(ACTION_START)) {
+                    int mediaId = intent.getIntExtra(EXTRA_MEDIA_ID, 0);
+                    boolean shuffling = intent.getBooleanExtra(EXTRA_SHUFFLING, false);
+                    controls.setShuffleMode(shuffling ? PlaybackStateCompat.SHUFFLE_MODE_ALL : PlaybackStateCompat.SHUFFLE_MODE_NONE);
+                    controls.playFromMediaId(String.valueOf(mediaId), null);
                 }
             }
             else MediaButtonReceiver.handleIntent(mediaSession, intent);
         }
-        stopSelf();
         return START_NOT_STICKY;
     }
+
+
     private boolean playPsalter(Psalter psalter, int currentVerse){
+        Logger.d("Attempting to play verse " + currentVerse + " of psalter " + psalter.getTitle());
         try{
             if(audioFocusGranted()) {
                 this.psalter = psalter;
                 this.currentVerse = currentVerse;
                 mediaPlayer.reset();
-                AssetFileDescriptor afd = psalterRepository.getAudioDescriptor(psalter);// getAssetFileDescriptor(psalter);
+                AssetFileDescriptor afd = psalterRepository.getAudioDescriptor(psalter);
                 if(afd == null) {
                     if(isShuffling()) controls.skipToNext();
                     return false;
@@ -143,6 +166,7 @@ public class MediaService extends Service
             else return false;
         }
         catch(Exception ex) {
+            Logger.e("error playing psalter", ex);
             return false;
         }
     }
@@ -167,12 +191,8 @@ public class MediaService extends Service
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
         if(!playNextVerse()){
-            if(isShuffling()){
-                controls.skipToNext();
-            }
-            else {
-                playbackEnded();
-            }
+            if(isShuffling()) controls.skipToNext();
+            else playbackEnded();
         }
     }
     private boolean isShuffling(){
@@ -180,6 +200,7 @@ public class MediaService extends Service
     }
 
     private void playbackEnded(){
+        Log.d("Psalter", "Playback Ended");
         unregisterReceiver(becomingNoisyReceiver);
         updatePlaybackState(PlaybackStateCompat.STATE_STOPPED);
         currentVerse = 1;
@@ -219,7 +240,6 @@ public class MediaService extends Service
         else{
             audioManager.abandonAudioFocus(this);
         }
-
     }
 
     @Override
@@ -264,25 +284,19 @@ public class MediaService extends Service
                 .setSubText(metadata.getString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE))
                 .setContentIntent(openActivityOnTouch)
                 .setColor(getResources().getColor(R.color.colorAccent))
-                .setShowWhen(false);
+                .setShowWhen(false)
+                .setDeleteIntent(getPendingIntent(ACTION_DELETE, 0));
         if(getPlaybackState() == PlaybackStateCompat.STATE_PLAYING){
-            Intent stopPlayback = new Intent(this, MediaService.class).setAction(ACTION_STOP);
-            PendingIntent stopPlaybackOnTouch = PendingIntent.getService(this, 1, stopPlayback, PendingIntent.FLAG_UPDATE_CURRENT);
-            builder.addAction(R.drawable.ic_stop_white_36dp, "Stop", stopPlaybackOnTouch)
+            builder.addAction(R.drawable.ic_stop_white_36dp, "Stop", getPendingIntent(ACTION_STOP, 1))
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
         }
         else{
-            Intent startPlayback = new Intent(this, MediaService.class).setAction(ACTION_PLAY);
-            PendingIntent startPlaybackOnTouch = PendingIntent.getService(this, 2, startPlayback, PendingIntent.FLAG_UPDATE_CURRENT);
-            builder.addAction(R.drawable.ic_play_arrow_white_36dp, "Play", startPlaybackOnTouch);
+            builder.addAction(R.drawable.ic_play_arrow_white_36dp, "Play", getPendingIntent(ACTION_PLAY, 2));
         }
         numActions++;
 
         if(isShuffling()){
-            Intent playNext = new Intent(this, MediaService.class).setAction(ACTION_NEXT);
-            PendingIntent playNextOnTouch = PendingIntent.getService(this, 3, playNext, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            builder.addAction(R.drawable.ic_skip_next_white_36dp, "Next", playNextOnTouch);
+            builder.addAction(R.drawable.ic_skip_next_white_36dp, "Next", getPendingIntent(ACTION_NEXT, 3));
             numActions++;
         }
         builder.setStyle(new MediaStyle()
@@ -373,6 +387,7 @@ public class MediaService extends Service
 
         @Override
         public void onSetShuffleMode(int shuffleMode) {
+            Logger.d("Setting shuffle mode");
             mediaSession.setShuffleMode(shuffleMode);
             if(shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL){
                 Toast.makeText(MediaService.this, "Shuffling", Toast.LENGTH_SHORT).show();
@@ -412,7 +427,7 @@ public class MediaService extends Service
     @Override
     public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
         mediaPlayer.reset();
-        Log.error("MediaPlayer error.");
+        Logger.error("MediaPlayer error.");
         return false;
     }
 
@@ -427,5 +442,10 @@ public class MediaService extends Service
             NotificationManager manager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
             manager.createNotificationChannel(channel);
         }
+    }
+
+    private PendingIntent getPendingIntent(String action, int actionId){ // actionId is any number unique to string action
+        Intent intent = new Intent(this, MediaService.class).setAction(action);
+        return PendingIntent.getService(this, actionId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 }

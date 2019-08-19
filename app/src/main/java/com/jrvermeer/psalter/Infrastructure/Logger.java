@@ -1,6 +1,7 @@
 package com.jrvermeer.psalter.Infrastructure;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.flurry.android.FlurryAgent;
 import com.jrvermeer.psalter.Core.Models.LogEvent;
@@ -15,8 +16,16 @@ import java.util.Map;
  * Created by Jonathan on 7/17/2018.
  */
 
-public class Log {
-    private Log() { }
+public class Logger {
+    private Logger() { }
+
+    public static void d(String message){
+        Log.d("PsalterLog", message);
+    }
+
+    public static void e(String message, Throwable ex){
+        Log.e("PsalterLog", message, ex);
+    }
 
     static {
         Context c =  PsalterApplication.getContext();
@@ -37,8 +46,7 @@ public class Log {
     public static void playbackStarted(String numberTitle, boolean shuffling){
         Map<String, String> params = new HashMap<>();
         params.put("Number", numberTitle);
-        params.put("Shuffling", String.valueOf(shuffling));
-        FlurryAgent.logEvent(LogEvent.PlayPsalter.name(), params);
+        FlurryAgent.logEvent(shuffling ? LogEvent.ShufflePsalter.name() : LogEvent.PlayPsalter.name(), params);
     }
 
     public static void searchEvent(SearchMode mode, String query, String psalterChosen){
