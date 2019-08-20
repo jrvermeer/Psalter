@@ -75,6 +75,7 @@
         android:layout_marginBottom="88dp"
         android:theme="?attr/secondaryFabStyle"
         android:src="@drawable/ic_clef_3"
+        android:onClick="toggleScore"
         app:fabSize="mini"/>
 
     <android.support.design.widget.FloatingActionButton
@@ -84,6 +85,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginRight="16dp"
         android:layout_marginBottom="16dp"
+        android:onClick="fabClick"
         android:src="@drawable/ic_play_arrow_white_24dp"/>
 
 </android.support.design.widget.CoordinatorLayout>

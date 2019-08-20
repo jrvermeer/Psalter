@@ -7,7 +7,6 @@ import com.flurry.android.FlurryAgent;
 import com.jrvermeer.psalter.Core.Models.LogEvent;
 import com.jrvermeer.psalter.Core.Models.SearchMode;
 import com.jrvermeer.psalter.R;
-import com.jrvermeer.psalter.UI.PsalterApplication;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,22 +16,24 @@ import java.util.Map;
  */
 
 public class Logger {
+    private static final String TAG = "PsalterLog";
     private Logger() { }
 
+    public static void Init(Context context){
+        new FlurryAgent.Builder()
+                .withLogEnabled(true)
+                .build(context, context.getResources().getString(R.string.secret_flurry));
+    }
+
     public static void d(String message){
-        Log.d("PsalterLog", message);
+        Log.d(TAG, message);
     }
 
     public static void e(String message, Throwable ex){
-        Log.e("PsalterLog", message, ex);
+        Log.e(TAG, message, ex);
+        FlurryAgent.onError(message, "", ex);
     }
 
-    static {
-        Context c =  PsalterApplication.getContext();
-        new FlurryAgent.Builder()
-                .withLogEnabled(true)
-                .build(c, c.getResources().getString(R.string.secret_flurry));
-    }
     public static void changeScore(boolean scoreVisible){
         Map<String, String> params = new HashMap<>();
         params.put("ScoreVisible", String.valueOf(scoreVisible));
@@ -73,11 +74,5 @@ public class Logger {
 
     public static void event(LogEvent event){
         FlurryAgent.logEvent(event.name());
-    }
-    public static void error(Throwable ex){
-        FlurryAgent.onError("Error", "", ex);
-    }
-    public static void error(String message){
-        FlurryAgent.onError("Error", message, "");
     }
 }

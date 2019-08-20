@@ -14,7 +14,6 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,7 +22,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.app.NotificationCompat;
@@ -34,9 +32,8 @@ import android.widget.Toast;
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository;
 import com.jrvermeer.psalter.Core.Models.Psalter;
 import com.jrvermeer.psalter.Core.Util;
-import com.jrvermeer.psalter.UI.Activities.MainActivity;
+import com.jrvermeer.psalter.UI.MainActivity;
 import com.jrvermeer.psalter.R;
-import com.jrvermeer.psalter.UI.PsalterApplication;
 
 /**
  * Created by Jonathan on 4/3/2017.
@@ -45,9 +42,9 @@ import com.jrvermeer.psalter.UI.PsalterApplication;
 public class MediaService extends Service
         implements AudioManager.OnAudioFocusChangeListener,
             MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
-    private MediaBinder mBinder = new MediaBinder();
+    private MediaServiceBinder binder;
 
-    private IPsalterRepository psalterRepository = new PsalterDb();;
+    private IPsalterRepository psalterRepository;
     private AudioManager audioManager;
     private AudioFocusRequest audioFocusRequest = null;
     private NotificationManagerCompat notificationManager;
@@ -55,7 +52,6 @@ public class MediaService extends Service
     private Handler handler = new Handler();
 
     private MediaSessionCompat mediaSession;
-    private MediaControllerCompat.TransportControls controls;
 
     private Psalter psalter;
     private int currentVerse = 1;
@@ -66,24 +62,20 @@ public class MediaService extends Service
     private static String NOTIFICATION_CHANNEL_ID = "DefaultChannel";
     private static String NOTIFICATION_CHANNEL_NAME = "Playback Notification";
 
-    private static final String ACTION_STOP = "ACTION_STOP"; // stop from notification
-    private static final String ACTION_NEXT = "ACTION_NEXT"; // next # from notification
-    private static final String ACTION_PLAY = "ACTION_PLAY"; // play (resume) from notification
-    private static final String ACTION_DELETE = "ACTION_DELETE"; // notification removed
+    public static final String ACTION_STOP = "ACTION_STOP"; // stop from notification
+    public static final String ACTION_NEXT = "ACTION_NEXT"; // next # from notification
+    public static final String ACTION_PLAY = "ACTION_PLAY"; // play (resume) from notification
+    public static final String ACTION_DELETE = "ACTION_DELETE"; // notification removed
 
-    private static final String ACTION_START = "ACTION_START"; // start new number from UI
-    private static final String EXTRA_MEDIA_ID = "EXTRA_MEDIA_ID";
-    private static final String EXTRA_SHUFFLING = "EXTRA_SHUFFLING";
+    public static final String ACTION_START = "ACTION_START"; // start new number from UI
+    public static final String EXTRA_MEDIA_ID = "EXTRA_MEDIA_ID";
+    public static final String EXTRA_SHUFFLING = "EXTRA_SHUFFLING";
 
-    public static Intent getStartIntent(Psalter psalter, boolean shuffling){
-        return new Intent(PsalterApplication.getContext(), MediaService.class)
-                .setAction(ACTION_START)
-                .putExtra(EXTRA_MEDIA_ID, psalter.getId())
-                .putExtra(EXTRA_SHUFFLING, shuffling);
-    }
 
     @Override
     public void onCreate() {
+        Logger.d("MediaService created");
+        psalterRepository = new PsalterDb(this);
         audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
         notificationManager = NotificationManagerCompat.from(this);
         createNotificationChannel();
@@ -93,45 +85,38 @@ public class MediaService extends Service
         mediaSession.setCallback(mMediaSessionCallback);
         mediaSession.setFlags( MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS );
 
-        controls = mediaSession.getController().getTransportControls();
+        binder = new MediaServiceBinder(mediaSession);
+
         updatePlaybackState(PlaybackStateCompat.STATE_NONE);
     }
 
     @Override
     public void onDestroy(){
-        Logger.d("Destroying MediaService");
+        Logger.d("MediaService destroyed");
         mediaPlayer.release();
-        notificationManager.cancelAll();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
+        return binder;
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if(intent != null ){
             String action = intent.getAction();
+            Logger.d("MediaService started from intent. Action: " + action);
             if(action != null){
-                if(action.equals(ACTION_STOP)){
-                    controls.stop();
-                }
-                else if(action.equals(ACTION_NEXT)){
-                    controls.skipToNext();
-                }
-                else if(action.equals(ACTION_PLAY)){
-                    controls.play();
-                }
-                else if(action.equals(ACTION_DELETE)){
-                    stopSelf();
-                }
+                if(action.equals(ACTION_STOP)) binder.stop();
+                else if(action.equals(ACTION_NEXT)) binder.skipToNext();
+                else if(action.equals(ACTION_PLAY)) binder.play();
+                else if(action.equals(ACTION_DELETE)) stopSelf();
                 else if(action.equals(ACTION_START)) {
                     int mediaId = intent.getIntExtra(EXTRA_MEDIA_ID, 0);
                     boolean shuffling = intent.getBooleanExtra(EXTRA_SHUFFLING, false);
-                    controls.setShuffleMode(shuffling ? PlaybackStateCompat.SHUFFLE_MODE_ALL : PlaybackStateCompat.SHUFFLE_MODE_NONE);
-                    controls.playFromMediaId(String.valueOf(mediaId), null);
+                    mediaSession.getController().getTransportControls().setShuffleMode(shuffling ? PlaybackStateCompat.SHUFFLE_MODE_ALL : PlaybackStateCompat.SHUFFLE_MODE_NONE);
+                    mediaSession.getController().getTransportControls().playFromMediaId(String.valueOf(mediaId), null);
                 }
             }
             else MediaButtonReceiver.handleIntent(mediaSession, intent);
@@ -141,7 +126,6 @@ public class MediaService extends Service
 
 
     private boolean playPsalter(Psalter psalter, int currentVerse){
-        Logger.d("Attempting to play verse " + currentVerse + " of psalter " + psalter.getTitle());
         try{
             if(audioFocusGranted()) {
                 this.psalter = psalter;
@@ -149,7 +133,7 @@ public class MediaService extends Service
                 mediaPlayer.reset();
                 AssetFileDescriptor afd = psalterRepository.getAudioDescriptor(psalter);
                 if(afd == null) {
-                    if(isShuffling()) controls.skipToNext();
+                    if(isShuffling()) binder.skipToNext();
                     return false;
                 }
                 mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
@@ -160,7 +144,6 @@ public class MediaService extends Service
                 updatePlaybackState(PlaybackStateCompat.STATE_PLAYING);
                 startForeground(NOTIFICATION_ID, getNotification());
                 mediaSession.setActive(true);
-                registerReceiver(becomingNoisyReceiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
                 return true;
             }
             else return false;
@@ -191,7 +174,7 @@ public class MediaService extends Service
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
         if(!playNextVerse()){
-            if(isShuffling()) controls.skipToNext();
+            if(binder.isShuffling()) binder.skipToNext();
             else playbackEnded();
         }
     }
@@ -201,7 +184,6 @@ public class MediaService extends Service
 
     private void playbackEnded(){
         Log.d("Psalter", "Playback Ended");
-        unregisterReceiver(becomingNoisyReceiver);
         updatePlaybackState(PlaybackStateCompat.STATE_STOPPED);
         currentVerse = 1;
         updateMetaData();
@@ -246,13 +228,13 @@ public class MediaService extends Service
     public void onAudioFocusChange(int i) {
         if(i == AudioManager.AUDIOFOCUS_LOSS){
             resumePlaybackOnFocusGain = false;
-            controls.pause();
+            binder.pause();
         }
         else if(i == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT){
             // having focus doesn't mean media is playing. only resume playback on focus regained if media was playing originally.
             if(getPlaybackState() == PlaybackStateCompat.STATE_PLAYING){
                 resumePlaybackOnFocusGain = true;
-                controls.pause();
+                binder.pause();
             }
         }
         else if(i == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK){
@@ -265,7 +247,7 @@ public class MediaService extends Service
                 mediaPlayer.setVolume(1f, 1f);
             }
             if(resumePlaybackOnFocusGain && getPlaybackState() != PlaybackStateCompat.STATE_PLAYING){
-                controls.play();
+                binder.play();
                 resumePlaybackOnFocusGain = false;
             }
         }
@@ -306,9 +288,11 @@ public class MediaService extends Service
     }
 
     private void updatePlaybackState(int state){
+        if(state == PlaybackStateCompat.STATE_PLAYING) registerReceiver();
+        else unregisterReceiver();
+
         long actions = PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID | PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH;
-        boolean isShuffling = isShuffling();
-        if(isShuffling){
+        if(isShuffling()){
             actions = actions | PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
         }
         if(state == PlaybackStateCompat.STATE_PAUSED){
@@ -354,7 +338,7 @@ public class MediaService extends Service
         @Override
         public void onReceive(Context context, Intent intent) {
             if(intent.getAction().equals(AudioManager.ACTION_AUDIO_BECOMING_NOISY)){
-                controls.pause();
+                binder.pause();
             }
         }
     };
@@ -387,7 +371,7 @@ public class MediaService extends Service
 
         @Override
         public void onSetShuffleMode(int shuffleMode) {
-            Logger.d("Setting shuffle mode");
+            Logger.d("Setting shuffle mode " + shuffleMode);
             mediaSession.setShuffleMode(shuffleMode);
             if(shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL){
                 Toast.makeText(MediaService.this, "Shuffling", Toast.LENGTH_SHORT).show();
@@ -397,7 +381,7 @@ public class MediaService extends Service
         @Override
         public void onPause() {
             if(getPlaybackState() == PlaybackStateCompat.STATE_PLAYING) {
-                if(mediaPlayer.isPlaying()){
+                if(mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
                 }
                 updatePlaybackState(PlaybackStateCompat.STATE_PAUSED);
@@ -425,15 +409,10 @@ public class MediaService extends Service
     };
 
     @Override
-    public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+    public boolean onError(MediaPlayer mediaPlayer, int what, int extra) {
         mediaPlayer.reset();
-        Logger.error("MediaPlayer error.");
+        Logger.e("MediaPlayer error. (" + what + ", " + extra + ")", null);
         return false;
-    }
-
-    public class MediaBinder extends Binder{
-        public MediaSessionCompat.Token getSessionToken(){
-            return mediaSession.getSessionToken(); }
     }
 
     private void createNotificationChannel(){
@@ -447,5 +426,13 @@ public class MediaService extends Service
     private PendingIntent getPendingIntent(String action, int actionId){ // actionId is any number unique to string action
         Intent intent = new Intent(this, MediaService.class).setAction(action);
         return PendingIntent.getService(this, actionId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+    private void registerReceiver() {
+        try { registerReceiver(becomingNoisyReceiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)); }
+        catch (Exception ex) { }
+    }
+    private void unregisterReceiver(){
+        try { unregisterReceiver(becomingNoisyReceiver); }
+        catch (Exception ex) { }
     }
 }
