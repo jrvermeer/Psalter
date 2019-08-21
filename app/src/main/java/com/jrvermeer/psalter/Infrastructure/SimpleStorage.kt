@@ -39,12 +39,14 @@ class SimpleStorage(private val context: Context) {
     }
 
     fun toggleNightMode(): Boolean {
-        return toggleBoolean(R.string.pref_nightmode)
+        val nightMode = toggleBoolean(R.string.pref_nightmode)
+        Logger.changeTheme(nightMode)
+        return nightMode
     }
 
-
-
     fun toggleScore(): Boolean {
-        return toggleBoolean(R.string.pref_showScore)
+        val shown = toggleBoolean(R.string.pref_showScore)
+        Logger.changeScore(shown)
+        return shown
     }
 }

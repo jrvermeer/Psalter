@@ -85,7 +85,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginRight="16dp"
         android:layout_marginBottom="16dp"
-        android:onClick="fabClick"
+        android:onClick="togglePlay"
         android:src="@drawable/ic_play_arrow_white_24dp"/>
 
 </android.support.design.widget.CoordinatorLayout>

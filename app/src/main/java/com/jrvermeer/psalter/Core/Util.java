@@ -8,12 +8,6 @@ import android.graphics.drawable.Drawable;
  */
 
 public class Util {
-    private static final float[] NEGATIVE = {
-            -1.0f,     0,     0,    0, 255, // red
-            0, -1.0f,     0,    0, 255, // green
-            0,     0, -1.0f,    0, 255, // blue
-            0,     0,     0, 1.0f,   0  // alpha
-    };
 
     public static int[] CreateRange(int start, int end){
         int[] range = new int[end - start + 1];
@@ -23,7 +17,5 @@ public class Util {
         return range;
     }
 
-    public static void invertColors(Drawable drawable){
-        drawable.setColorFilter(new ColorMatrixColorFilter(NEGATIVE));
-    }
+
 }
