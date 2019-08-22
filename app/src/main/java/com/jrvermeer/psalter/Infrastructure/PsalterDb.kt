@@ -13,6 +13,7 @@ import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository
 import com.jrvermeer.psalter.Core.Models.Psalter
 import com.jrvermeer.psalter.Core.Models.SqLiteQuery
+import com.jrvermeer.psalter.Core.shortToast
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper
 
 import java.util.ArrayList
@@ -65,9 +66,9 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
         val hits = ArrayList<Psalter>()
         try {
             val lyrics = lyricsReplacePunctuation()
-            lyrics.addParameter("%$searchText%")
+            lyrics.parameters.add("%$searchText%")
 
-            c = db.rawQuery("select _id, number, psalm, " + lyrics.queryText + " l from psalter where l like ?", lyrics.parameters)
+            c = db.rawQuery("select _id, number, psalm, ${lyrics.text} l from psalter where l like ?", lyrics.parameters.toTypedArray())
             while (c!!.moveToNext()) {
                 val p = Psalter()
                 p.id = c.getInt(0)
@@ -92,7 +93,7 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
             val columns = arrayOf("_id", "number", "psalm", "title", "lyrics", "numverses", "heading", "AudioFileName", "ScoreFileName", "NumVersesInsideStaff")
             qb.tables = TABLE_NAME
             c = qb.query(db, columns, where, parms, null, null, null, limit)
-            while (c!!.moveToNext()) {
+            while (c.moveToNext()) {
                 val p = Psalter()
 
                 p.id = c.getInt(0)
@@ -117,19 +118,19 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
 
     private fun lyricsReplacePunctuation(): SqLiteQuery {
         val query = SqLiteQuery()
-        query.queryText = "lyrics"
+        query.text = "lyrics"
         for (ignore in context.resources.getStringArray(R.array.search_ignore_strings)) {
-            query.queryText = "replace(" + query.queryText + ", ?, '')"
-            query.addParameter(ignore)
+            query.text = "replace(${query.text}, ?, '')"
+            query.parameters.add(ignore)
         }
         return query
     }
 
     override fun getAudioDescriptor(psalter: Psalter): AssetFileDescriptor? {
         return try {
-            context.assets.openFd("Audio/" + psalter.audioFileName)
+            context.assets.openFd("Audio/${psalter.audioFileName}")
         } catch (ex: Exception) {
-            Logger.e("Error getting audio " + psalter.title, ex)
+            context.shortToast("Audio unavailable for ${psalter.title}")
             null
         }
 
@@ -137,12 +138,9 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
 
     override fun getScore(psalter: Psalter): BitmapDrawable? {
         return try {
-            Drawable.createFromStream(context.assets.open("Score/" + psalter.scoreFileName), null) as BitmapDrawable
-        } catch (ex: Exception) {
-            Logger.e("Error getting score " + psalter.title, ex)
-            null
+            Drawable.createFromStream(context.assets.open("Score/${psalter.scoreFileName}"), null) as BitmapDrawable
         }
-
+        catch (ex: Exception) { null }
     }
 
 

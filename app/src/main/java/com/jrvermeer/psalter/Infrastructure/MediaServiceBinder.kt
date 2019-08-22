@@ -10,19 +10,21 @@ import com.jrvermeer.psalter.Core.Models.Psalter
 
 class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder() {
 
+    private val player = mediaSession.controller.transportControls
+
     val isPlaying get() = mediaSession.controller.playbackState?.state == PlaybackStateCompat.STATE_PLAYING
     val isShuffling get() = mediaSession.controller.shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL
     val currentMediaId get() = mediaSession.controller.metadata.description.mediaId?.toInt()
 
-    fun play() { mediaSession.controller.transportControls.play() }
-    fun pause() { mediaSession.controller.transportControls.pause() }
-    fun stop() { mediaSession.controller.transportControls.stop() }
-    fun skipToNext() { mediaSession.controller.transportControls.skipToNext() }
+    fun play() { player.play() }
+    fun pause() { player.pause() }
+    fun stop() { player.stop() }
+    fun skipToNext() { player.skipToNext() }
     fun play(context: Context, psalter: Psalter, shuffling: Boolean){
-       context.startService(Intent(context, MediaService::class.java)
-                .setAction(MediaService.ACTION_START)
-                .putExtra(MediaService.EXTRA_MEDIA_ID, psalter.id)
-                .putExtra(MediaService.EXTRA_SHUFFLING, shuffling))
+        player.setShuffleMode( if (shuffling) PlaybackStateCompat.SHUFFLE_MODE_ALL else PlaybackStateCompat.SHUFFLE_MODE_NONE)
+        player.playFromMediaId(psalter.id.toString(), null)
+        context.startService(Intent(context, MediaService::class.java))
+        Logger.playbackStarted(psalter.title, shuffling)
     }
 
     fun registerCallback(callback: MediaControllerCompat.Callback) {

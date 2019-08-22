@@ -3,16 +3,12 @@ package com.jrvermeer.psalter.UI.Adaptors
 import android.content.Context
 import android.support.v4.text.HtmlCompat
 import android.support.v4.view.PagerAdapter
-import android.text.Html
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository
-import com.jrvermeer.psalter.Core.Util
 import com.jrvermeer.psalter.Core.invertColors
 import com.jrvermeer.psalter.Infrastructure.Logger
 import com.jrvermeer.psalter.R

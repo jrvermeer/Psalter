@@ -33,7 +33,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import com.jrvermeer.psalter.Core.*
 import kotlinx.android.synthetic.main.psalter_layout.view.*
 
@@ -51,7 +50,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Logger.Init(this)
+        Logger.init(this)
         psalterRepository = PsalterDb(this)
         storage = SimpleStorage(this)
 
@@ -67,8 +66,8 @@ class MainActivity : AppCompatActivity() {
         lvSearchResults.adapter = PsalterSearchAdapter(this, psalterRepository)
 
         tutorials = TutorialHelper(this)
-        tutorials.showShuffleTutorial(fab!!)
-        tutorials.showScoreTutorial(fabToggleScore!!)
+        tutorials.showShuffleTutorial(fab)
+        tutorials.showScoreTutorial(fabToggleScore)
 
         fab.setOnLongClickListener { shuffle() }
         searchBtn_Psalm.setOnClickListener { setSearchModePsalm() }
@@ -110,11 +109,10 @@ class MainActivity : AppCompatActivity() {
         searchView = searchMenuItem.actionView as SearchView
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                if(query == null) return true
                 when (searchMode) {
-                    SearchMode.Lyrics -> performStringSearch(query)
-                    SearchMode.Psalm -> performPsalmSearch(query.toInt())
-                    SearchMode.Psalter -> performPsalterSearch(query.toInt())
+                    SearchMode.Lyrics -> performLyricSearch(query ?: "")
+                    SearchMode.Psalm -> performPsalmSearch(query?.toInt() ?: 0)
+                    SearchMode.Psalter -> performPsalterSearch(query?.toInt() ?: 0)
                 }
                 searchView.clearFocus()
                 return true
@@ -122,7 +120,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(query: String?): Boolean {
                 if (searchMode == SearchMode.Lyrics && query != null && query.length > 1) {
-                    performStringSearch(query)
+                    performLyricSearch(query)
                     return true
                 }
                 return false
@@ -185,39 +183,41 @@ class MainActivity : AppCompatActivity() {
         searchView.inputType = InputType.TYPE_CLASS_NUMBER
         searchView.queryHint = "Enter Psalm (1 - 150)"
         searchMode = SearchMode.Psalm
-        searchBtn_Psalm.select(searchBtn_Psalter, searchBtn_Lyrics)
+        searchBtn_Psalm.deselect(searchBtn_Psalter, searchBtn_Lyrics)
    }
     private fun setSearchModeLyrics() {
         searchView.inputType = InputType.TYPE_CLASS_TEXT
         searchView.queryHint = "Enter search query"
         searchMode = SearchMode.Lyrics
-        searchBtn_Lyrics.select(searchBtn_Psalter, searchBtn_Psalm)
+        searchBtn_Lyrics.deselect(searchBtn_Psalter, searchBtn_Psalm)
     }
     private fun setSearchModePsalter() {
         searchView.inputType = InputType.TYPE_CLASS_NUMBER
         searchView.queryHint = "Enter Psalter number (1 - 434)"
         searchMode = SearchMode.Psalter
-        searchBtn_Psalter.select(searchBtn_Psalm, searchBtn_Lyrics)
+        searchBtn_Psalter.deselect(searchBtn_Psalm, searchBtn_Lyrics)
     }
 
     private fun performPsalterSearch(psalterNumber: Int){
         if (psalterNumber in 1..434) {
             collapseSearchView()
             goToPsalter(psalterNumber)
-            Logger.searchEvent(searchMode, psalterNumber.toString(), null)
+            Logger.searchPsalter(psalterNumber)
         }
         else this.shortToast("Pick a number between 1 and 434")
     }
-    private fun performStringSearch(query: String) {
+    private fun performLyricSearch(query: String) {
         showSearchResultsScreen()
         (lvSearchResults.adapter as PsalterSearchAdapter).queryPsalter(query)
         lvSearchResults.setSelectionAfterHeaderView()
+        Logger.searchLyrics(query)
     }
     private fun performPsalmSearch(psalm: Int) {
         if (psalm in 1..150) {
             showSearchResultsScreen()
             (lvSearchResults.adapter as PsalterSearchAdapter).getAllFromPsalm(psalm)
             lvSearchResults.setSelectionAfterHeaderView()
+            Logger.searchPsalm(psalm)
         }
         else this.shortToast("Pick a number between 1 and 150")
     }
@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSearchResultsScreen() {
         lvSearchResults.show()
-        viewpager.show()
+        viewpager.hide()
         fab.hide()
     }
     private fun hideSearchResultsScreen() {
@@ -253,7 +253,6 @@ class MainActivity : AppCompatActivity() {
         viewpager.setCurrentItem(psalter.id, true) //viewpager goes by index
     }
 
-
     fun toggleScore(view: View?) {
         val adapter = viewpager.adapter as PsalterPagerAdapter
         storage.toggleScore()
@@ -270,14 +269,12 @@ class MainActivity : AppCompatActivity() {
         else {
             val psalter = selectedPsalter
             mediaService.play(this, psalter!!, false)
-            Logger.playbackStarted(psalter.title, false)
         }
     }
 
     private fun shuffle(): Boolean {
         val psalter = selectedPsalter
         mediaService.play(this, psalter!!, true)
-        Logger.playbackStarted(psalter.title, true)
 
         tutorials.showShuffleRandomTutorial(toolbar.findViewById(R.id.action_random))
         return true
@@ -289,7 +286,7 @@ class MainActivity : AppCompatActivity() {
             val num = Integer.parseInt(tvNumber!!.text.toString())
 
             //log event before collapsing searchview, so we can log the query text
-            Logger.searchEvent(searchMode, searchView.query.toString(), num.toString())
+            Logger.searchEvent(searchMode, searchView.query.toString(), num)
 
             collapseSearchView()
             goToPsalter(num)
@@ -299,12 +296,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun pageCreated(page: View, position: Int) {
+    private fun pageCreated(page: View, position: Int) {
         if (position == viewpager.currentItem) {
             tutorials.showGoToPsalmTutorial(page.tvPagerPsalm)
         }
     }
-    fun onPageSelected(index: Int) {
+    private fun onPageSelected(index: Int) {
         storage.pageIndex = index
         if (mediaService?.isPlaying && mediaService?.currentMediaId != index) { // if we're playing audio of a different #, stop it
             mediaService.stop()
@@ -323,7 +320,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    internal var callback: MediaControllerCompat.Callback = object : MediaControllerCompat.Callback() {
+    private var callback: MediaControllerCompat.Callback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
             if (mediaService.isPlaying) fab.setImageResourceSafe(R.drawable.ic_stop_white_24dp)
             else fab.setImageResourceSafe(R.drawable.ic_play_arrow_white_24dp)
@@ -334,7 +331,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun FloatingActionButton.setChecked(checked: Boolean) {
+    private fun FloatingActionButton.setChecked(checked: Boolean) {
         val color: Int = if (checked && storage.isNightMode) Color.WHITE
         else if (checked) ContextCompat.getColor(this@MainActivity, R.color.colorAccent)
         else if (storage.isNightMode) ContextCompat.getColor(this@MainActivity, R.color.colorUnselectedInverse)
@@ -343,7 +340,7 @@ class MainActivity : AppCompatActivity() {
         this.drawable.mutate().setTint(color)
     }
 
-    fun TextView.select(vararg deselect: TextView){
+    private fun TextView.deselect(vararg deselect: TextView){
         deselect.forEach { tv -> TextViewCompat.setTextAppearance(tv, R.style.Button) }
         TextViewCompat.setTextAppearance(this, R.style.Button_Selected)
     }

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.drawable.Drawable
+import android.media.MediaPlayer
 import android.os.Build
 import android.support.annotation.DrawableRes
 import android.support.design.widget.FloatingActionButton
@@ -42,14 +43,6 @@ fun Context.longToast(message: String) {
     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
 }
 
-fun Activity.recreateSafe() {
-    if (Build.VERSION.SDK_INT == 23) { // framework bug in api 23 calling recreate inside onOptionsItemSelected.
-        finish()
-        startActivity(intent)
-    }
-    else recreate()
-}
-
 fun View.show(){
     this.visibility = View.VISIBLE
 }
@@ -57,10 +50,33 @@ fun View.hide() {
     this.visibility = View.GONE
 }
 
+//ducking is handled by the system in Oreo
+fun MediaPlayer.duck(){
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        this.setVolume(0.1f, 0.1f)
+    }
+}
+fun MediaPlayer.unduck(){
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        this.setVolume(1f, 1f)
+    }
+}
+
+// framework bug, setting images fails after toggling night mode. https://stackoverflow.com/a/52158081
 fun FloatingActionButton.setImageResourceSafe(@DrawableRes id: Int) {
     this.setImageResource(id)
-    if (this.isShown) {  // stupid ass bug, setting images fails after toggling night mode. https://stackoverflow.com/a/52158081
+    if (this.isShown) {
         this.hide()
         this.show()
     }
+}
+
+
+// framework bug in api 23 calling recreate inside onOptionsItemSelected.
+fun Activity.recreateSafe() {
+    if (Build.VERSION.SDK_INT == 23) {
+        finish()
+        startActivity(intent)
+    }
+    else recreate()
 }
