@@ -130,12 +130,14 @@ class MainActivity : AppCompatActivity() {
         searchMenuItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                 showSearchButtons()
+                menu.hideExcept(searchMenuItem)
                 return true
             }
 
             override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
                 hideSearchResultsScreen()
                 hideSearchButtons()
+                invalidateOptionsMenu()
                 return true
             }
         })
@@ -245,7 +247,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun collapseSearchView() {
-        if (searchMenuItem?.isActionViewExpanded) searchMenuItem.collapseActionView()
+        if (searchMenuItem.isActionViewExpanded) searchMenuItem.collapseActionView()
     }
 
     private fun goToPsalter(psalterNumber: Int) {
@@ -268,13 +270,15 @@ class MainActivity : AppCompatActivity() {
         if (mediaService.isPlaying) mediaService.stop()
         else {
             val psalter = selectedPsalter
-            mediaService.play(this, psalter!!, false)
+            mediaService.play(psalter!!, false)
+            mediaService.startService(this)
         }
     }
 
     private fun shuffle(): Boolean {
         val psalter = selectedPsalter
-        mediaService.play(this, psalter!!, true)
+        mediaService.play(psalter!!, true)
+        mediaService.startService(this)
 
         tutorials.showShuffleRandomTutorial(toolbar.findViewById(R.id.action_random))
         return true
@@ -343,5 +347,12 @@ class MainActivity : AppCompatActivity() {
     private fun TextView.deselect(vararg deselect: TextView){
         deselect.forEach { tv -> TextViewCompat.setTextAppearance(tv, R.style.Button) }
         TextViewCompat.setTextAppearance(this, R.style.Button_Selected)
+    }
+
+    private fun Menu.hideExcept(exception: MenuItem) {
+        for (i in 0 until this.size()) {
+            val item = this.getItem(i)
+            if (item != exception) item.isVisible = false
+        }
     }
 }

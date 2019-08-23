@@ -25,14 +25,10 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.app.NotificationCompat
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.app.NotificationCompat.MediaStyle
-import android.util.Log
-import android.widget.Toast
 
 import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository
 import com.jrvermeer.psalter.Core.Models.Psalter
-import com.jrvermeer.psalter.Core.duck
-import com.jrvermeer.psalter.Core.shortToast
-import com.jrvermeer.psalter.Core.unduck
+import com.jrvermeer.psalter.Core.*
 import com.jrvermeer.psalter.UI.MainActivity
 import com.jrvermeer.psalter.R
 
@@ -56,7 +52,6 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
     private lateinit var notificationManager: NotificationManagerCompat
     private lateinit var mediaSession: MediaSessionCompat
     private val mediaPlayer = MediaPlayer()
-    private val handler = Handler()
 
     private var audioFocusRequest: AudioFocusRequest? = null
     private var psalter: Psalter? = null
@@ -82,14 +77,14 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Logger.d("MediaService started")
+        Logger.d("MediaService started (${intent?.action})")
         if(intent?.action == ACTION_DELETE) stopSelf()
         else MediaButtonReceiver.handleIntent(mediaSession, intent)
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
-        Logger.d("MediaService destroyed, releasing resources.")
+        Logger.d("MediaService destroyed")
         mediaPlayer.release()
         mediaSession.release()
         mMediaSessionCallback
@@ -136,35 +131,47 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
 
     private val becomingNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (binder.isPlaying) binder.pause()
+            if (binder.isPlaying) {
+                Logger.d("Pausing from BroadcastReceiver (${intent.action})")
+                binder.pause()
+            }
         }
     }
 
     private val mMediaSessionCallback = object : MediaSessionCompat.Callback() {
         override fun onPlay() {
-            if (mediaSession.controller.playbackState.state == PlaybackStateCompat.STATE_PAUSED && audioFocusGranted()) {
+            Logger.d("OnPlay")
+            if (audioFocusGranted()) {
+                // can't transition from stopped to playing, must prepare
+                if(mediaSession.controller.playbackState.state == PlaybackStateCompat.STATE_STOPPED){
+                    prepareNewPsalter(psalter)
+                }
                 mediaPlayer.start()
                 updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                updateNotification()
-            } else if (psalter != null) {
-                playPsalter(psalter, currentVerse)
+                startForeground(NOTIFICATION_ID, notification)
+                mediaSession.isActive = true
             }
         }
 
         override fun onStop() {
-            if (mediaPlayer.isPlaying) { //between verses this could be false
+            Logger.d("OnStop")
+            if (mediaPlayer.isPlaying) {
                 mediaPlayer.stop()
             }
-            val state = mediaSession.controller.playbackState.state
-            if (state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_PAUSED) {
-                playbackEnded()
-            }
+            updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
+            currentVerse = 1
+            updateMetaData()
+            updateNotification()
+            abandonAudioFocus()
+            mediaSession.isActive = false
         }
 
         override fun onSetShuffleMode(shuffleMode: Int) {
-            Logger.d("Setting shuffle mode $shuffleMode")
             mediaSession.setShuffleMode(shuffleMode)
-            if (shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL) {
+            if(binder.isPlaying) {
+                updateNotification()
+            }
+            if (binder.isShuffling) {
                 shortToast("Shuffling")
             }
         }
@@ -180,18 +187,14 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
         }
 
         override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
-            playPsalter(psalterRepository.getIndex(Integer.valueOf(mediaId!!)), 1)
-        }
-
-        override fun onPlayFromSearch(query: String?, extras: Bundle?) {
-            val hits = psalterRepository.searchPsalter(query!!)
-            if (hits.isNotEmpty()) {
-                playPsalter(hits[0], 1)
+            if(prepareNewPsalter(psalterRepository.getIndex(mediaId?.toInt()!!))){
+                binder.play()
             }
         }
 
         override fun onSkipToNext() {
-            playPsalter(psalterRepository.getRandom(), 1)
+            prepareNewPsalter(getPsalterWithAudio())
+            binder.play()
         }
     }
 
@@ -199,42 +202,27 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
         return binder
     }
 
-    private fun playPsalter(psalter: Psalter?, currentVerse: Int): Boolean {
-        try {
-            if (audioFocusGranted()) {
-                this.psalter = psalter
-                this.currentVerse = currentVerse
-                mediaPlayer.reset()
-                val afd = psalterRepository.getAudioDescriptor(psalter!!)
-                if (afd == null) {
-                    if (binder.isShuffling) binder.skipToNext()
-                    return false
-                }
-                mediaPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                afd.close()
-                mediaPlayer.prepare()
-                mediaPlayer.start()
-                updateMetaData()
-                updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                startForeground(NOTIFICATION_ID, notification)
-                mediaSession.isActive = true
-                return true
-            } else
-                return false
-        } catch (ex: Exception) {
-            Logger.e("error playing psalter", ex)
-            return false
-        }
+    private fun prepareNewPsalter(psalter: Psalter?): Boolean{
+        if(psalter == null) return false
+        val audio = psalterRepository.getAudioDescriptor(psalter) ?: return false
+
+        this.psalter = psalter
+        currentVerse = 1
+        mediaPlayer.reset()
+        mediaPlayer.setDataSource(audio.fileDescriptor, audio.startOffset, audio.length)
+        audio.close()
+        updateMetaData()
+        mediaPlayer.prepare()
+        return true
     }
 
     private fun playNextVerse(): Boolean {
         if (currentVerse < psalter!!.numverses) {
-            handler.postDelayed({
+            Handler().postDelayed({
                 if (binder.isPlaying) { // media could have been stopped between verses
                     currentVerse++
                     updateMetaData()
-                    mediaPlayer.start()
-                    startForeground(NOTIFICATION_ID, notification)
+                    binder.play()
                 }
             }, MS_BETWEEN_VERSES.toLong())
             return true
@@ -244,21 +232,9 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
 
     override fun onCompletion(mediaPlayer: MediaPlayer) {
         if (!playNextVerse()) {
-            if (binder.isShuffling)
-                binder.skipToNext()
-            else
-                playbackEnded()
+            if (binder.isShuffling) binder.skipToNext()
+            else binder.stop()
         }
-    }
-
-    private fun playbackEnded() {
-        Log.d("Psalter", "Playback Ended")
-        updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
-        currentVerse = 1
-        updateMetaData()
-        updateNotification()
-        abandonAudioFocus()
-        mediaSession.isActive = false
     }
 
     private fun abandonAudioFocus() {
@@ -273,6 +249,7 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
         when(i){
             AudioManager.AUDIOFOCUS_LOSS -> {
                 resumePlaybackOnFocusGain = false
+                Logger.d("Pausing from AudioFocusChange (AUDIOFOCUS_LOSS)")
                 binder.pause()
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
@@ -286,6 +263,7 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 if (binder.isPlaying) {
                     resumePlaybackOnFocusGain = true
+                    Logger.d("Pausing from AudioFocusChange (AUDIOFOCUS_LOSS_TRANSIENT)")
                     binder.pause()
                 }
             }
@@ -361,5 +339,13 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, MediaPl
         }
         else requestResult = audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
         return requestResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    fun getPsalterWithAudio(): Psalter {
+        var psalter = psalterRepository.getRandom()
+        while(psalterRepository.getAudioDescriptor(psalter) == null){
+            psalter = psalterRepository.getRandom()
+        }
+        return psalter
     }
 }

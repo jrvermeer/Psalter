@@ -20,11 +20,15 @@ class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder(
     fun pause() { player.pause() }
     fun stop() { player.stop() }
     fun skipToNext() { player.skipToNext() }
-    fun play(context: Context, psalter: Psalter, shuffling: Boolean){
+    fun play(psalter: Psalter, shuffling: Boolean){
         player.setShuffleMode( if (shuffling) PlaybackStateCompat.SHUFFLE_MODE_ALL else PlaybackStateCompat.SHUFFLE_MODE_NONE)
-        player.playFromMediaId(psalter.id.toString(), null)
+        if(!isPlaying){
+            player.playFromMediaId(psalter.id.toString(), null)
+            Logger.playbackStarted(psalter.title, shuffling)
+        }
+    }
+    fun startService(context: Context){
         context.startService(Intent(context, MediaService::class.java))
-        Logger.playbackStarted(psalter.title, shuffling)
     }
 
     fun registerCallback(callback: MediaControllerCompat.Callback) {

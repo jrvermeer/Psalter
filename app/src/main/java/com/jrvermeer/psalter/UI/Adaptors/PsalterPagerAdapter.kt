@@ -43,7 +43,7 @@ class PsalterPagerAdapter(private val context: Context,
                     if (nightMode) score.invertColors()
                     layout.imgScore.setImageDrawable(score)
                     val lyricStartIndex = psalter.lyrics.indexOf((psalter.numVersesInsideStaff + 1).toString() + ". ")
-                    if (lyricStartIndex > 0) text = psalter.lyrics.substring(lyricStartIndex)
+                    text = if (lyricStartIndex < 0) "" else psalter.lyrics.substring(lyricStartIndex)
                 }
             }
             layout.tvPagerLyrics.text = text
