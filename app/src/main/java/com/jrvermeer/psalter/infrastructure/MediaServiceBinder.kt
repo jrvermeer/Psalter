@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter.Infrastructure
+package com.jrvermeer.psalter.infrastructure
 
 import android.content.Context
 import android.content.Intent
@@ -6,7 +6,7 @@ import android.os.Binder
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import com.jrvermeer.psalter.Core.Models.Psalter
+import com.jrvermeer.psalter.models.Psalter
 
 class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder() {
 

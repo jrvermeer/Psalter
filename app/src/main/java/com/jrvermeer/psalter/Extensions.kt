@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter.Core
+package com.jrvermeer.psalter
 
 import android.app.Activity
 import android.content.Context
@@ -10,6 +10,8 @@ import android.support.annotation.DrawableRes
 import android.support.design.widget.FloatingActionButton
 import android.view.View
 import android.widget.Toast
+import java.io.BufferedInputStream
+import java.io.BufferedReader
 import java.util.ArrayList
 
 fun MutableList<Int>.swap(index1: Int, index2: Int) {
@@ -28,12 +30,13 @@ fun String.allIndexesOf(query: String): List<Int> {
     return rtn
 }
 
-fun Drawable.invertColors() {
+fun Drawable.invertColors(): Drawable {
     this.colorFilter = ColorMatrixColorFilter(floatArrayOf(
             -1.0f, 0f, 0f, 0f, 255f, // red
             0f, -1.0f, 0f, 0f, 255f, // green
             0f, 0f, -1.0f, 0f, 255f, // blue
             0f, 0f, 0f, 1.0f, 0f))  // alpha
+    return this
 }
 
 fun Context.shortToast(message: String) {
@@ -70,7 +73,6 @@ fun FloatingActionButton.setImageResourceSafe(@DrawableRes id: Int) {
         this.show()
     }
 }
-
 
 // framework bug in api 23 calling recreate inside onOptionsItemSelected.
 fun Activity.recreateSafe() {

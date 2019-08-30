@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dist="http://schemas.android.com/apk/distribution"
     package="com.jrvermeer.psalter">
+    <dist:module dist:instant="true" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.INSTANT_APP_FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -12,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.Light">
         <activity
-            android:name="com.jrvermeer.psalter.UI.MainActivity"
+            android:name="com.jrvermeer.psalter.ui.MainActivity"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -21,7 +24,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".Infrastructure.MediaService">
+        <service android:name=".infrastructure.MediaService">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>

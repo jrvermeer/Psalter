@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter.Infrastructure
+package com.jrvermeer.psalter.infrastructure
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -38,10 +38,9 @@ class SimpleStorage(private val context: Context) {
         sPref.edit().putInt(context.getString(id), `val`).apply()
     }
 
-    fun toggleNightMode(): Boolean {
+    fun toggleNightMode() {
         val nightMode = toggleBoolean(R.string.pref_nightmode)
         Logger.changeTheme(nightMode)
-        return nightMode
     }
 
     fun toggleScore(): Boolean {

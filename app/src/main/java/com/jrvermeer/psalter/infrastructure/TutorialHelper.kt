@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter.Infrastructure
+package com.jrvermeer.psalter.infrastructure
 
 import android.app.Activity
 import android.support.annotation.StringRes
@@ -49,13 +49,6 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
                 R.string.tutorial_fabreminder_title,
                 R.string.tutorial_fabreminder_description,
                 true)
-    }
-
-    fun showShuffleRandomTutorial(button: View) {
-        showTutorial(button,
-                R.string.pref_tutorialshown_randomWhenShuffling,
-                R.string.tutorial_randomWhenShuffling_title,
-                R.string.tutorial_randomWhenShuffling_description)
     }
 
     fun showGoToPsalmTutorial(view: View) {

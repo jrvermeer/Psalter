@@ -24,6 +24,15 @@
                 android:textSize="18sp"
                 android:textColorLink="@color/colorAccent"/>
 
+            <ProgressBar
+                android:id="@+id/scoreProgress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="50dp"
+                android:paddingBottom="50dp"
+                android:layout_gravity="center"
+                android:visibility="gone"/>
+
             <android.support.v7.widget.AppCompatImageView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

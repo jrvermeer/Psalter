@@ -1,14 +1,12 @@
-package com.jrvermeer.psalter.Infrastructure
+package com.jrvermeer.psalter.infrastructure
 
 import android.content.Context
 import android.util.Log
 
 import com.flurry.android.FlurryAgent
-import com.jrvermeer.psalter.Core.Models.LogEvent
-import com.jrvermeer.psalter.Core.Models.SearchMode
+import com.jrvermeer.psalter.models.LogEvent
+import com.jrvermeer.psalter.models.SearchMode
 import com.jrvermeer.psalter.R
-
-import java.util.HashMap
 
 /**
  * Created by Jonathan on 7/17/2018.
@@ -29,7 +27,7 @@ object Logger {
 
     fun e(message: String, ex: Throwable?) {
         Log.e(TAG, message, ex)
-        FlurryAgent.onError(message, "", ex)
+        FlurryAgent.onError("Error", message, ex)
     }
 
     fun changeScore(scoreVisible: Boolean) {

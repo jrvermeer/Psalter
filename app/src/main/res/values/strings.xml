@@ -4,6 +4,7 @@
     <string name="pref_nightmode">key_nightmode</string>
     <string name="pref_lastindex">key_lastindex</string>
     <string name="pref_showScore">key_showscore</string>
+    <string name="mediaBaseUrl">https://github.com/jrvermeer/PsalterFiles/raw/master/</string>
 
 
     <string name="action_nightmode">Night Mode</string>
@@ -28,10 +29,6 @@
     <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore_2</string>
     <string name="tutorial_showscore_title"> New! Updated music score images!</string>
     <string name="tutorial_showscore_description">This button will toggle them on or off</string>
-
-    <string name="pref_tutorialshown_randomWhenShuffling">pref_tutorialshown_randomWhenShuffling</string>
-    <string name="tutorial_randomWhenShuffling_title">When shuffling audio, this button will skip to the next random song</string>
-    <string name="tutorial_randomWhenShuffling_description">Just like the skip button in the notification</string>
 
     <string name="request_writestorage_message">In order to download and use audio recordings and music score, Psalter needs access to external storage.</string>
     <string name="download_complete_message">Audio and score are now available! Enjoy!</string>

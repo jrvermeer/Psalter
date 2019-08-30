@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter.UI.Adaptors
+package com.jrvermeer.psalter.ui.adaptors
 
 import android.content.Context
 import android.graphics.Typeface
@@ -12,10 +12,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 
-import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository
-import com.jrvermeer.psalter.Core.Models.Psalter
+import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.R
-import com.jrvermeer.psalter.Core.allIndexesOf
+import com.jrvermeer.psalter.allIndexesOf
+import com.jrvermeer.psalter.infrastructure.PsalterDb
 
 import java.util.ArrayList
 import kotlinx.android.synthetic.main.search_results_layout.view.*
@@ -25,19 +25,19 @@ import kotlinx.android.synthetic.main.search_results_layout.view.*
  */
 
 //uses data from PsalterDb class to fill search "screen" with items
-class PsalterSearchAdapter(private val appContext: Context, private val psalterRepository: IPsalterRepository) : ArrayAdapter<Psalter>(appContext, R.layout.search_results_layout) {
+class PsalterSearchAdapter(private val appContext: Context, private val psalterDb: PsalterDb) : ArrayAdapter<Psalter>(appContext, R.layout.search_results_layout) {
     private lateinit var query: String
     private val inflater: LayoutInflater = LayoutInflater.from(appContext)
     private var psalmSearch: Boolean = false
 
     fun queryPsalter(searchQuery: String) {
         query = getFilteredQuery(searchQuery.toLowerCase())
-        showResults(psalterRepository.searchPsalter(query!!))
+        showResults(psalterDb.searchPsalter(query!!))
         psalmSearch = false
     }
 
     fun getAllFromPsalm(psalm: Int) {
-        showResults(psalterRepository.getPsalm(psalm))
+        showResults(psalterDb.getPsalm(psalm))
         psalmSearch = true
     }
 

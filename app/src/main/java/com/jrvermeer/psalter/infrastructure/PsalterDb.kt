@@ -1,29 +1,29 @@
-package com.jrvermeer.psalter.Infrastructure
+package com.jrvermeer.psalter.infrastructure
 
 import android.content.Context
-import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteQueryBuilder
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-
+import android.net.Uri
 import com.jrvermeer.psalter.R
-import com.jrvermeer.psalter.Core.Contracts.IPsalterRepository
-import com.jrvermeer.psalter.Core.Models.Psalter
-import com.jrvermeer.psalter.Core.Models.SqLiteQuery
-import com.jrvermeer.psalter.Core.shortToast
+import com.jrvermeer.psalter.models.Psalter
+import com.jrvermeer.psalter.models.SqLiteQuery
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper
-
-import java.util.ArrayList
+import kotlinx.coroutines.*
+import java.io.File
+import java.util.*
 
 /**
  * Created by Jonathan on 3/27/2017.
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
-class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATABASE_NAME, null, DATABASE_VERSION), IPsalterRepository {
+class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     private val db: SQLiteDatabase
+    private val downloader = DownloadHelper(context.filesDir.path, context.getString(R.string.mediaBaseUrl))
+    private var nextRandom : Psalter? = null
 
     init {
         setForcedUpgrade(DATABASE_VERSION)
@@ -31,37 +31,58 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
     }
 
     companion object {
-        private const val DATABASE_VERSION = 25
+        private const val DATABASE_VERSION = 29
         private const val DATABASE_NAME = "psalter.sqlite"
         private const val TABLE_NAME = "psalter"
     }
 
-    override fun getCount(): Int {
+    fun getCount(): Int {
         return try {
             DatabaseUtils.queryNumEntries(db, TABLE_NAME).toInt()
         } catch (ex: Exception) { 0 }
     }
 
-    override fun getIndex(index: Int): Psalter? {
+    fun getIndex(index: Int): Psalter? {
         val results = queryPsalter("_id = $index", null, "1")
         return if (results.isEmpty()) null else results[0]
     }
 
-    override fun getPsalter(number: Int): Psalter? {
+    fun getPsalter(number: Int): Psalter? {
         val results = queryPsalter("number = $number", null, "1")
         return if (results.isEmpty()) null else results[0]
     }
 
-    override fun getRandom(): Psalter {
+    suspend fun fetchNextRandom() {
+        nextRandom = queryRandom()
+        Logger.d("Pre-fetching next random (${nextRandom?.title})")
+        withContext(Dispatchers.Default) { loadAssets(nextRandom!!) }
+        Logger.d("Pre-fetch complete")
+    }
+    suspend fun getRandom(): Psalter {
+        val rtn = nextRandom ?: loadAssets(queryRandom())
+        nextRandom = null
+        return loadAssets(rtn!!)
+    }
+
+    private fun queryRandom(): Psalter {
         val results = queryPsalter("_id IN (SELECT _id FROM $TABLE_NAME ORDER BY RANDOM() LIMIT 1)", null, null)
         return results[0]
     }
 
-    override fun getPsalm(psalmNumber: Int): Array<Psalter> {
+    suspend fun loadAssets(psalter: Psalter) = withContext(Dispatchers.Default) {
+        val getScore = async { getScore(psalter) }
+        val getAudio = async { getAudio(psalter) }
+
+        psalter.score = getScore.await()
+        psalter.audio = getAudio.await()
+        return@withContext psalter
+    }
+
+    fun getPsalm(psalmNumber: Int): Array<Psalter> {
         return queryPsalter("psalm = $psalmNumber", null, null)
     }
 
-    override fun searchPsalter(searchText: String): Array<Psalter> {
+    fun searchPsalter(searchText: String): Array<Psalter> {
         var c: Cursor? = null
         val hits = ArrayList<Psalter>()
         try {
@@ -90,7 +111,7 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
         val hits = ArrayList<Psalter>()
         try {
             val qb = SQLiteQueryBuilder()
-            val columns = arrayOf("_id", "number", "psalm", "title", "lyrics", "numverses", "heading", "AudioFileName", "ScoreFileName", "NumVersesInsideStaff")
+            val columns = arrayOf("_id", "number", "psalm", "title", "lyrics", "numverses", "heading", "audioFileName", "scoreFileName", "NumVersesInsideStaff")
             qb.tables = TABLE_NAME
             c = qb.query(db, columns, where, parms, null, null, null, limit)
             while (c.moveToNext()) {
@@ -103,8 +124,8 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
                 p.lyrics = c.getString(4)
                 p.numverses = c.getInt(5)
                 p.heading = c.getString(6)
-                p.audioFileName = c.getString(7)
-                p.scoreFileName = c.getString(8)
+                p.audioPath = c.getString(7)
+                p.scorePath = c.getString(8)
                 p.numVersesInsideStaff = c.getInt(9)
                 hits.add(p)
             }
@@ -126,22 +147,22 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
         return query
     }
 
-    override fun getAudioDescriptor(psalter: Psalter): AssetFileDescriptor? {
-        return try {
-            context.assets.openFd("Audio/${psalter.audioFileName}")
-        } catch (ex: Exception) {
-            context.shortToast("Audio unavailable for ${psalter.title}")
-            null
-        }
-
+    suspend fun getAudio(psalter: Psalter): Uri? = withContext(Dispatchers.Default) {
+        val file = getFile(psalter.audioPath)
+        return@withContext if(file != null) Uri.parse(file.path) else null
+    }
+    suspend fun getScore(psalter: Psalter): BitmapDrawable? = withContext(Dispatchers.Default) {
+        var file = getFile(psalter.scorePath)
+        return@withContext if(file != null) Drawable.createFromPath(file.path) as BitmapDrawable else null
     }
 
-    override fun getScore(psalter: Psalter): BitmapDrawable? {
-        return try {
-            Drawable.createFromStream(context.assets.open("Score/${psalter.scoreFileName}"), null) as BitmapDrawable
-        }
-        catch (ex: Exception) { null }
+    private suspend fun getFile(path: String): File? = withContext(Dispatchers.Default) {
+        try{
+            // try getting from internal storage
+            var file: File? = File(context.filesDir, path)
+            // try downloading
+            if(file?.exists() == false) file = withContext(Dispatchers.Default) { downloader.downloadFile(path) }
+            return@withContext if(file?.exists() == true) file else null
+        } catch (ex: Exception) { return@withContext null }
     }
-
-
 }

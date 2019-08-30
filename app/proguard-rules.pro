@@ -13,6 +13,12 @@
 -keep class android.support.v7.widget.ActionMenuView { *** mPresenter; }
 -keep class android.support.v7.widget.ActionMenuPresenter { *** mOverflowButton; }
 
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepclassmembernames class kotlinx.** {
+    volatile <fields>;
+}
+
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:
