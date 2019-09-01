@@ -17,19 +17,20 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
-import android.support.v4.app.NotificationManagerCompat
+import androidx.core.app.NotificationManagerCompat
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaButtonReceiver
+import androidx.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v4.app.NotificationCompat
-import android.support.v4.content.ContextCompat
-import android.support.v4.media.app.NotificationCompat.MediaStyle
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
+import androidx.media.app.NotificationCompat.MediaStyle
 
 import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.ui.MainActivity
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.duck
+import com.jrvermeer.psalter.helpers.DownloadHelper
 import com.jrvermeer.psalter.shortToast
 import com.jrvermeer.psalter.unduck
 import kotlinx.coroutines.*
@@ -45,7 +46,10 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         private const val NOTIFICATION_CHANNEL_ID = "DefaultChannel"
         private const val NOTIFICATION_CHANNEL_NAME = "Playback Notification"
 
-        private const val ACTION_DELETE = "ACTION_DELETE"
+        const val ACTION_DELETE = "ACTION_DELETE"
+        const val ACTION_SKIP_TO_NEXT = "ACTION_SKIP_TO_NEXT"
+        const val ACTION_PLAY = "ACTION_PLAY"
+        const val ACTION_STOP = "ACTION_STOP"
     }
 
     private lateinit var binder: MediaServiceBinder
@@ -62,13 +66,11 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
 
     override fun onCreate() {
         Logger.d("MediaService created")
-        psalterDb = PsalterDb(this)
-        launch { psalterDb.fetchNextRandom() }
+        psalterDb = PsalterDb(this, this)
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         notificationManager = NotificationManagerCompat.from(this)
         createNotificationChannel()
-        mediaPlayer.setOnCompletionListener { mp -> this@MediaService.mediaPlayerCompleted(mp) }
-        //mediaPlayer.setOnPreparedListener { binder.play() }
+        mediaPlayer.setOnCompletionListener { this@MediaService.mediaPlayerCompleted() }
         mediaPlayer.setOnErrorListener { mp, what, extra -> this@MediaService.mediaPlayerError(mp, what, extra) }
 
         mediaSession = MediaSessionCompat(this, "MediaService")
@@ -83,8 +85,13 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Logger.d("MediaService started (${intent?.action})")
-        if(intent?.action == ACTION_DELETE) stopSelf()
-        else MediaButtonReceiver.handleIntent(mediaSession, intent)
+        when(intent?.action) {
+            ACTION_DELETE -> stopSelf()
+            ACTION_SKIP_TO_NEXT -> binder.skipToNext()
+            ACTION_STOP -> binder.stop()
+            ACTION_PLAY -> binder.play()
+            else -> androidx.media.session.MediaButtonReceiver.handleIntent(mediaSession, intent)
+        }
         return START_NOT_STICKY
     }
 
@@ -101,9 +108,6 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
             val iOpenActivity = Intent(this, MainActivity::class.java)
             val pendingOpenActivity = PendingIntent.getActivity(this, 0, iOpenActivity, PendingIntent.FLAG_UPDATE_CURRENT)
 
-            val iDelete = Intent(this, MediaService::class.java).setAction(ACTION_DELETE)
-            val pendingDelete = PendingIntent.getService(this, 0, iDelete, PendingIntent.FLAG_UPDATE_CURRENT)
-
             var numActions = 0
             val builder = NotificationCompat.Builder(this@MediaService, NOTIFICATION_CHANNEL_ID)
             val metadata = mediaSession.controller.metadata
@@ -114,19 +118,19 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
                     .setContentIntent(pendingOpenActivity)
                     .setColor(ContextCompat.getColor(this, R.color.colorAccent))
                     .setShowWhen(false)
-                    .setDeleteIntent(pendingDelete)
+                    .setDeleteIntent(getPendingIntent(ACTION_DELETE, 0))
             if(psalter?.score != null) builder.setLargeIcon(psalter?.score?.bitmap)
 
             if (mediaSession.controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING) {
-                builder.addAction(R.drawable.ic_stop_white_36dp, "Stop", MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_STOP))
+                builder.addAction(R.drawable.ic_stop_white_36dp, "Stop", getPendingIntent(ACTION_STOP, 1))
                         .priority = NotificationCompat.PRIORITY_HIGH
             } else {
-                builder.addAction(R.drawable.ic_play_arrow_white_36dp, "Play", MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY))
+                builder.addAction(R.drawable.ic_play_arrow_white_36dp, "Play", getPendingIntent(ACTION_PLAY, 2))
             }
             numActions++
 
             if (binder.isShuffling) {
-                builder.addAction(R.drawable.ic_skip_next_white_36dp, "Next", MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
+                builder.addAction(R.drawable.ic_skip_next_white_36dp, "Next", getPendingIntent(ACTION_SKIP_TO_NEXT, 3))
                 numActions++
             }
             builder.setStyle(MediaStyle()
@@ -151,7 +155,7 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
                 launch {
                     // can't transition from stopped to playing, must prepare
                     if(mediaSession.controller.playbackState.state == PlaybackStateCompat.STATE_STOPPED){
-                        prepareNewPsalter(psalter)
+                        prepareNewPsalter(psalter, false)
                     }
                     updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     mediaPlayer.start()
@@ -198,15 +202,14 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
             var psalter = psalterDb.getIndex(mediaId?.toInt()!!)
             launch {
-                if(prepareNewPsalter(psalter)) binder.play()
+                if(prepareNewPsalter(psalter, false)) binder.play()
                 else this@MediaService.shortToast("Audio unavailable for ${psalter?.title}")
             }
         }
-
         override fun onSkipToNext() {
             Logger.d("Skip To Next")
-            launch{
-                if(prepareNewPsalter(getRandomWithAudio())){
+            launch {
+                if(prepareNewPsalter(psalterDb.getRandom(), true)){
                     binder.play()
                 }
             }
@@ -217,18 +220,22 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         return binder
     }
 
-    private suspend fun prepareNewPsalter(psalter: Psalter?): Boolean {
+    private suspend fun prepareNewPsalter(psalter: Psalter?, skipIfFailed: Boolean): Boolean {
         if(psalter == null) return false
-        if(psalter.score == null) psalter.score = psalterDb.getScore(psalter)
-        val audioUri = psalterDb.getAudio(psalter) ?: return false
+        mediaPlayer.reset() // stop audio, we're going to a different page
+        updateMetaData(psalter)
+        val audioUri = psalter.loadAudio(psalterDb.downloader)
+        if(audioUri == null){
+            if(skipIfFailed) binder.skipToNext()
+            return false
+        }
+        psalter.loadScore(psalterDb.downloader)
         this.psalter = psalter
         currentVerse = 1
-        mediaPlayer.reset()
+        mediaPlayer.reset() // cya: multiple coroutines could be trying to set datasource at the same time here
         mediaPlayer.setDataSource(this, audioUri)
-        updateMetaData(psalter)
         mediaPlayer.prepare()
         Logger.d("${psalter.title} prepared. Setting next number...")
-        launch { psalterDb.fetchNextRandom() }
         return true
     }
 
@@ -246,7 +253,7 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         return false
     }
 
-    private fun mediaPlayerCompleted(mediaPlayer: MediaPlayer) {
+    private fun mediaPlayerCompleted() {
         if (!playNextVerse()) {
             if (binder.isShuffling) binder.skipToNext()
             else binder.stop()
@@ -254,7 +261,8 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
     }
 
     private fun abandonAudioFocus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//        AudioManagerCompat
+        if (Build.VERSION.SDK_INT >= 26) {
             audioManager.abandonAudioFocusRequest(audioFocusRequest!!)
         } else {
             audioManager.abandonAudioFocus(this)
@@ -358,10 +366,18 @@ class MediaService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         return requestResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
 
-    private suspend fun getRandomWithAudio(): Psalter {
-        var psalter: Psalter
-        do psalter = psalterDb.getRandom()
-        while (psalter.audio == null)
-        return psalter
+//    private suspend fun getRandomWithAudio(): Psalter {
+//        var psalter: Psalter
+//        do psalter = psalterDb.getRandom()
+//        while (psalter.loadAudio(psalterDb.downloader) == null)
+//        return psalter
+//    }
+
+
+    // MediaButtonReceiver.buildMediaButtonPendingIntent doesn't work for instant apps?
+    private fun getPendingIntent(action: String?, i: Int): PendingIntent {
+        val intent = Intent(this, MediaService::class.java).setAction(action)
+        return PendingIntent.getService(this, i, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
+
 }

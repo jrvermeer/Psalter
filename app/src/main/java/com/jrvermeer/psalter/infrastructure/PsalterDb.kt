@@ -5,29 +5,30 @@ import android.database.Cursor
 import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteQueryBuilder
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.net.Uri
 import com.jrvermeer.psalter.R
+import com.jrvermeer.psalter.helpers.DownloadHelper
 import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.models.SqLiteQuery
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper
-import kotlinx.coroutines.*
-import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.util.*
 
 /**
  * Created by Jonathan on 3/27/2017.
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
-class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class PsalterDb(private val context: Context,
+                val scope: CoroutineScope) : SQLiteAssetHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+
+    val downloader = DownloadHelper(context)
     private val db: SQLiteDatabase
-    private val downloader = DownloadHelper(context.filesDir.path, context.getString(R.string.mediaBaseUrl))
     private var nextRandom : Psalter? = null
 
     init {
         setForcedUpgrade(DATABASE_VERSION)
         db = readableDatabase
+        scope.launch { loadNextRandom() }
     }
 
     companion object {
@@ -52,30 +53,20 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
         return if (results.isEmpty()) null else results[0]
     }
 
-    suspend fun fetchNextRandom() {
+    private fun CoroutineScope.loadNextRandom() {
         nextRandom = queryRandom()
-        Logger.d("Pre-fetching next random (${nextRandom?.title})")
-        withContext(Dispatchers.Default) { loadAssets(nextRandom!!) }
-        Logger.d("Pre-fetch complete")
+        launch { nextRandom!!.loadAudio(downloader) }
+        launch { nextRandom!!.loadScore(downloader) }
     }
-    suspend fun getRandom(): Psalter {
-        val rtn = nextRandom ?: loadAssets(queryRandom())
-        nextRandom = null
-        return loadAssets(rtn!!)
+    fun getRandom(): Psalter {
+        val rtn = nextRandom
+        scope.launch { loadNextRandom() }
+        return rtn!!
     }
 
     private fun queryRandom(): Psalter {
         val results = queryPsalter("_id IN (SELECT _id FROM $TABLE_NAME ORDER BY RANDOM() LIMIT 1)", null, null)
         return results[0]
-    }
-
-    suspend fun loadAssets(psalter: Psalter) = withContext(Dispatchers.Default) {
-        val getScore = async { getScore(psalter) }
-        val getAudio = async { getAudio(psalter) }
-
-        psalter.score = getScore.await()
-        psalter.audio = getAudio.await()
-        return@withContext psalter
     }
 
     fun getPsalm(psalmNumber: Int): Array<Psalter> {
@@ -145,24 +136,5 @@ class PsalterDb(private val context: Context) : SQLiteAssetHelper(context, DATAB
             query.parameters.add(ignore)
         }
         return query
-    }
-
-    suspend fun getAudio(psalter: Psalter): Uri? = withContext(Dispatchers.Default) {
-        val file = getFile(psalter.audioPath)
-        return@withContext if(file != null) Uri.parse(file.path) else null
-    }
-    suspend fun getScore(psalter: Psalter): BitmapDrawable? = withContext(Dispatchers.Default) {
-        var file = getFile(psalter.scorePath)
-        return@withContext if(file != null) Drawable.createFromPath(file.path) as BitmapDrawable else null
-    }
-
-    private suspend fun getFile(path: String): File? = withContext(Dispatchers.Default) {
-        try{
-            // try getting from internal storage
-            var file: File? = File(context.filesDir, path)
-            // try downloading
-            if(file?.exists() == false) file = withContext(Dispatchers.Default) { downloader.downloadFile(path) }
-            return@withContext if(file?.exists() == true) file else null
-        } catch (ex: Exception) { return@withContext null }
     }
 }

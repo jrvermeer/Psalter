@@ -1,4 +1,4 @@
-package com.jrvermeer.psalter.infrastructure
+package com.jrvermeer.psalter.helpers
 
 import android.content.Intent
 import android.net.Uri

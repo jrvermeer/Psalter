@@ -1,12 +1,13 @@
-package com.jrvermeer.psalter.infrastructure
+package com.jrvermeer.psalter.helpers
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.support.annotation.StringRes
+import androidx.annotation.StringRes
 
 import com.jrvermeer.psalter.R
+import com.jrvermeer.psalter.infrastructure.Logger
 
-class SimpleStorage(private val context: Context) {
+class StorageHelper(private val context: Context) {
     private val sPref: SharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
     val isNightMode get() = getBoolean(R.string.pref_nightmode)

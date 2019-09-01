@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="match_parent"
@@ -28,17 +28,17 @@
 
         </ListView>
 
-        <android.support.v4.view.ViewPager
+        <androidx.viewpager.widget.ViewPager
             android:id="@+id/viewpager"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
 
-            <android.support.v4.view.PagerTitleStrip
+            <androidx.viewpager.widget.PagerTitleStrip
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/PagerTitleStrip"></android.support.v4.view.PagerTitleStrip>
-        </android.support.v4.view.ViewPager>
+                android:textAppearance="@style/PagerTitleStrip"></androidx.viewpager.widget.PagerTitleStrip>
+        </androidx.viewpager.widget.ViewPager>
 
         <TableLayout
             android:id="@+id/tableButtons"
@@ -49,24 +49,24 @@
 
             <TableRow android:gravity="center" >
 
-                <android.support.v7.widget.AppCompatButton
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalter"
                     android:text="Psalter #"
                     android:theme="?attr/buttonStyle"/>
 
-                <android.support.v7.widget.AppCompatButton
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Lyrics"
                     android:text="Lyrics"
                     android:theme="?attr/buttonStyle"/>
 
-                <android.support.v7.widget.AppCompatButton
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalm"
                     android:text="Psalm #"
                     android:theme="?attr/buttonStyle"/>
             </TableRow>
         </TableLayout>
     </LinearLayout>
-    <android.support.design.widget.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabToggleScore"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -77,7 +77,7 @@
         android:src="@drawable/ic_clef_3"
         app:fabSize="mini"/>
 
-    <android.support.design.widget.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -86,4 +86,4 @@
         android:layout_marginBottom="16dp"
         android:src="@drawable/ic_play_arrow_white_24dp"/>
 
-</android.support.design.widget.CoordinatorLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

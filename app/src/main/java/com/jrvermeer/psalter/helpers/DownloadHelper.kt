@@ -1,7 +1,8 @@
-package com.jrvermeer.psalter.infrastructure
+package com.jrvermeer.psalter.helpers
 
 import android.content.Context
 import com.jrvermeer.psalter.R
+import com.jrvermeer.psalter.infrastructure.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedInputStream
@@ -11,13 +12,13 @@ import java.io.FileOutputStream
 import java.net.URL
 
 
-class DownloadHelper(private val storageDir: String, private val baseUrl: String) {
-    //private val baseUrl = context.getString(R.string.mediaBaseUrl)
-    suspend fun downloadFile(path: String): File? = withContext(Dispatchers.Default){
-        val file = File(storageDir, path)
+class DownloadHelper(private val context: Context) {
+    val storageDir: String get() = context.filesDir.path
+    suspend fun downloadFile(path: String): File? = withContext(Dispatchers.IO) {
+        val file = File(context.filesDir, path)
         val temp = File.createTempFile("prefix", "suffix")
         try {
-            val url = URL(baseUrl + path)
+            val url = URL(context.getString(R.string.mediaBaseUrl) + path)
             val connection = url.openConnection()
             connection.connect()
             Logger.d("Downloading $url")
@@ -41,13 +42,13 @@ class DownloadHelper(private val storageDir: String, private val baseUrl: String
             temp.delete()
             Logger.d("Download Complete: $url")
             return@withContext file
-        } catch(e: FileNotFoundException){
-            if(temp.exists()) temp.delete()
-            return@withContext null
         }
         catch (e: Exception) {
-            Logger.e("Error: ", e)
+            if(e !is FileNotFoundException) Logger.e("Error: ", e)
             return@withContext null
+        }
+        finally {
+            if(temp.exists()) temp.delete()
         }
     }
 }

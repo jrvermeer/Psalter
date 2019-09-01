@@ -6,19 +6,11 @@ import android.graphics.ColorMatrixColorFilter
 import android.graphics.drawable.Drawable
 import android.media.MediaPlayer
 import android.os.Build
-import android.support.annotation.DrawableRes
-import android.support.design.widget.FloatingActionButton
+import androidx.annotation.DrawableRes
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.view.View
 import android.widget.Toast
-import java.io.BufferedInputStream
-import java.io.BufferedReader
 import java.util.ArrayList
-
-fun MutableList<Int>.swap(index1: Int, index2: Int) {
-    val tmp = this[index1] // 'this' corresponds to the list
-    this[index1] = this[index2]
-    this[index2] = tmp
-}
 
 fun String.allIndexesOf(query: String): List<Int> {
     val rtn = ArrayList<Int>()

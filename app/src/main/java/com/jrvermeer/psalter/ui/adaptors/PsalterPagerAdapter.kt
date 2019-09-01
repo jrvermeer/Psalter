@@ -1,7 +1,8 @@
 package com.jrvermeer.psalter.ui.adaptors
 
-import android.support.v4.text.HtmlCompat
-import android.support.v4.view.PagerAdapter
+import android.content.Context
+import androidx.core.text.HtmlCompat
+import androidx.viewpager.widget.PagerAdapter
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
@@ -11,22 +12,18 @@ import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.infrastructure.Logger
 import com.jrvermeer.psalter.infrastructure.PsalterDb
 import com.jrvermeer.psalter.*
-import com.jrvermeer.psalter.ui.MainActivity
 import kotlinx.android.synthetic.main.psalter_layout.view.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Created by Jonathan on 3/27/2017.
  */
 
-class PsalterPagerAdapter(private val context: MainActivity,
+class PsalterPagerAdapter(private val context: Context,
                           private val psalterDb: PsalterDb,
                           private var showScore: Boolean,
-                          private val nightMode: Boolean) : PagerAdapter() {
+                          private val nightMode: Boolean) : androidx.viewpager.widget.PagerAdapter() {
 
     private var pageCreated: ((View, Int) -> Unit)? = null
     private val views = ConcurrentHashMap<Int, View>()
@@ -38,12 +35,12 @@ class PsalterPagerAdapter(private val context: MainActivity,
 
     override fun instantiateItem(collection: ViewGroup, position: Int): Any {
         try {
-            Logger.d("Viewpager building page $position")
             val psalter = psalterDb.getIndex(position)!!
+            Logger.d("Viewpager building page for psalter ${psalter.title}")
             val inflater = LayoutInflater.from(context)
             val layout = inflater.inflate(R.layout.psalter_layout, collection, false) as ViewGroup
 
-            context.launch { setScoreAndLyrics(psalter, layout) }
+            psalterDb.scope.launch { setScoreAndLyrics(psalter, layout) }
 
             layout.tvPagerHeading.text = psalter.heading
             layout.tvPagerPsalm.text = HtmlCompat.fromHtml(psalter.subtitleLink, HtmlCompat.FROM_HTML_MODE_LEGACY)
@@ -80,27 +77,34 @@ class PsalterPagerAdapter(private val context: MainActivity,
         return view === `object`
     }
 
-    private suspend fun setScoreAndLyrics(psalter: Psalter, layout: View){
-        layout.tvPagerLyrics.text = psalter.lyrics
+    private suspend fun setScoreAndLyrics(psalter: Psalter, layout: View) {
+        var text = psalter.lyrics
         if (showScore) {
             layout.scoreProgress.show()
-            val score = psalterDb.getScore(psalter)
+            // block function on loading score: we need it now
+            val score = psalter.loadScore(psalterDb.downloader)
             if (score != null) {
                 if (nightMode) score.invertColors()
                 layout.imgScore.setImageDrawable(score)
                 layout.scoreProgress.hide()
 
                 val lyricStartIndex = psalter.lyrics.indexOf((psalter.numVersesInsideStaff + 1).toString() + ". ")
-                layout.tvPagerLyrics.text = if (lyricStartIndex < 0) "" else psalter.lyrics.substring(lyricStartIndex)
+                text = if (lyricStartIndex < 0) "" else psalter.lyrics.substring(lyricStartIndex)
             }
         }
-        else layout.imgScore.setImageDrawable(null)
+        else {
+            layout.imgScore.setImageDrawable(null)
+            // we don't need either of these *now*, but could at the tap of a button
+            psalterDb.scope.launch { psalter.loadAudio(psalterDb.downloader) }
+            psalterDb.scope.launch { psalter.loadScore(psalterDb.downloader) }
+        }
+        layout.tvPagerLyrics.text = text
     }
 
     fun toggleScore()  {
         showScore = !showScore
         for((i, view) in views){
-            context.launch { setScoreAndLyrics(psalterDb.getIndex(i)!!, view) }
+            psalterDb.scope.launch { setScoreAndLyrics(psalterDb.getIndex(i)!!, view) }
         }
     }
 

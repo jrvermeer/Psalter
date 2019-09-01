@@ -12,23 +12,26 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.Color
 import android.os.IBinder
-import android.support.design.widget.FloatingActionButton
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
-import android.support.v4.view.ViewPager
-import android.support.v4.widget.TextViewCompat
-import android.support.v7.widget.SearchView
-import android.support.v7.widget.Toolbar
+import androidx.core.content.ContextCompat
+import androidx.viewpager.widget.ViewPager
+import androidx.core.widget.TextViewCompat
+import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.Toolbar
 import android.text.InputType
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import com.jrvermeer.psalter.*
+import com.jrvermeer.psalter.helpers.IntentHelper
+import com.jrvermeer.psalter.helpers.StorageHelper
+import com.jrvermeer.psalter.helpers.TutorialHelper
 import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
@@ -37,7 +40,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
     private var searchMode = SearchMode.Psalter
-    private lateinit var storage: SimpleStorage
+    private lateinit var storage: StorageHelper
     private lateinit var psalterDb: PsalterDb
     private lateinit var tutorials: TutorialHelper
     private lateinit var searchMenuItem: MenuItem
@@ -50,9 +53,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         super.onCreate(savedInstanceState)
         Logger.init(this)
         Logger.d("MainActivity created")
-        storage = SimpleStorage(this)
-        psalterDb = PsalterDb(this)
-        launch { psalterDb.fetchNextRandom() }
+        storage = StorageHelper(this)
+        psalterDb = PsalterDb(this, this)
 
         // must initialize theme before calling setContentView
         setTheme(if (storage.isNightMode) R.style.AppTheme_Dark else R.style.AppTheme_Light)
@@ -155,7 +157,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             val next = psalterDb.getRandom()
             Logger.d("Going to ${next.title}")
             viewpager.setCurrentItem(next.id, true)
-            psalterDb.fetchNextRandom()
         }
         Logger.event(LogEvent.GoToRandom)
     }

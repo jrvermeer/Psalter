@@ -1,7 +1,7 @@
-package com.jrvermeer.psalter.infrastructure
+package com.jrvermeer.psalter.helpers
 
 import android.app.Activity
-import android.support.annotation.StringRes
+import androidx.annotation.StringRes
 import android.view.View
 
 import com.getkeepsafe.taptargetview.TapTarget
@@ -14,7 +14,7 @@ import com.jrvermeer.psalter.R
 
 class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener {
     private var targetSequence: TapTargetSequence? = null
-    private var storage = SimpleStorage(context)
+    private var storage = StorageHelper(context)
 
     private fun getTargetSequence(): TapTargetSequence {
         return TapTargetSequence(context)
