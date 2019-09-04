@@ -191,7 +191,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             goToPsalter(psalterNumber)
             Logger.searchPsalter(psalterNumber)
         }
-        else this.shortToast("Pick a number between 1 and 434")
+        else toast("Pick a number between 1 and 434")
     }
     private fun performLyricSearch(query: String, logEvent: Boolean) {
         showSearchResultsScreen()
@@ -206,7 +206,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             lvSearchResults.setSelectionAfterHeaderView()
             Logger.searchPsalm(psalm)
         }
-        else this.shortToast("Pick a number between 1 and 150")
+        else toast("Pick a number between 1 and 150")
     }
 
     private fun showSearchButtons() {

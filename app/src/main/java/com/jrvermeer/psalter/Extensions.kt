@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.drawable.Drawable
-import android.media.MediaPlayer
 import android.os.Build
 import androidx.annotation.DrawableRes
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -31,11 +30,8 @@ fun Drawable.invertColors(): Drawable {
     return this
 }
 
-fun Context.shortToast(message: String) {
-    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-}
-fun Context.longToast(message: String) {
-    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+fun Context.toast(message: String, length: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(this, message, length).show()
 }
 
 fun View.show(){
@@ -43,18 +39,6 @@ fun View.show(){
 }
 fun View.hide() {
     this.visibility = View.GONE
-}
-
-//ducking is handled by the system in Oreo
-fun MediaPlayer.duck(){
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-        this.setVolume(0.1f, 0.1f)
-    }
-}
-fun MediaPlayer.unduck(){
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-        this.setVolume(1f, 1f)
-    }
 }
 
 // framework bug, setting images fails after toggling night mode. https://stackoverflow.com/a/52158081

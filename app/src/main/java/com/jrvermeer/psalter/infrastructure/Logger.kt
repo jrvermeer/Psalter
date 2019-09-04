@@ -7,6 +7,7 @@ import com.flurry.android.FlurryAgent
 import com.jrvermeer.psalter.models.LogEvent
 import com.jrvermeer.psalter.models.SearchMode
 import com.jrvermeer.psalter.R
+import com.jrvermeer.psalter.models.Psalter
 
 /**
  * Created by Jonathan on 7/17/2018.
@@ -32,17 +33,22 @@ object Logger {
 
     fun changeScore(scoreVisible: Boolean) {
         val params = mapOf("ScoreVisible" to scoreVisible.toString())
-        FlurryAgent.logEvent(LogEvent.ChangeScore.name, params)
+        event(LogEvent.ChangeScore, params)
     }
 
     fun changeTheme(nightMode: Boolean) {
         val params = mapOf("NightMode" to nightMode.toString())
-        FlurryAgent.logEvent(LogEvent.ChangeTheme.name, params)
+        event(LogEvent.ChangeTheme, params)
     }
 
     fun playbackStarted(numberTitle: String, shuffling: Boolean) {
         val params = mapOf("Number" to numberTitle)
-        FlurryAgent.logEvent(if (shuffling) LogEvent.ShufflePsalter.name else LogEvent.PlayPsalter.name, params)
+        event(if (shuffling) LogEvent.ShufflePsalter else LogEvent.PlayPsalter, params)
+    }
+
+    fun skipToNext(skippedPsalter: Psalter){
+        val params = mapOf("SkippedPsalter" to skippedPsalter.title)
+        event(LogEvent.SkipToNext, params)
     }
 
     fun searchPsalter(number: Int){
@@ -51,7 +57,7 @@ object Logger {
     fun searchPsalm(psalm: Int, psalterChosen: Int? = null){
         val params = mutableMapOf("Psalm" to psalm.toString())
         if(psalterChosen != null) params["PsalterChosen"] = psalterChosen.toString()
-        event(LogEvent.SearchPsalm, params);
+        event(LogEvent.SearchPsalm, params)
     }
     fun searchLyrics(query: String, psalterChosen: Int? = null){
         val params = mutableMapOf("Query" to query)

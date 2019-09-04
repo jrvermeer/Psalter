@@ -44,7 +44,7 @@ class DownloadHelper(private val context: Context) {
             return@withContext file
         }
         catch (e: Exception) {
-            if(e !is FileNotFoundException) Logger.e("Error: ", e)
+            if(e !is FileNotFoundException) Logger.e("Error downloading $path", e)
             return@withContext null
         }
         finally {

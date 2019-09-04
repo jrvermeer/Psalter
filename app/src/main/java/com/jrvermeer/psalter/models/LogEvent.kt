@@ -13,6 +13,5 @@ enum class LogEvent {
     SearchPsalter,
     SearchPsalm,
     SearchLyrics,
-    ExpansionManualDownload,
-    ErrorExpansionDownload
+    SkipToNext
 }

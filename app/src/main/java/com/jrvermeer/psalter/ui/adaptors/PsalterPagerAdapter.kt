@@ -78,10 +78,12 @@ class PsalterPagerAdapter(private val context: Context,
     }
 
     private suspend fun setScoreAndLyrics(psalter: Psalter, layout: View) {
+        // load audio in bg. viewpager never needs audio, but user could request it at tap of a button
+        psalterDb.scope.launch { psalter.loadAudio(psalterDb.downloader) }
         var text = psalter.lyrics
         if (showScore) {
             layout.scoreProgress.show()
-            // block function on loading score: we need it now
+            // load score blocking: we need it now
             val score = psalter.loadScore(psalterDb.downloader)
             if (score != null) {
                 if (nightMode) score.invertColors()
@@ -94,8 +96,7 @@ class PsalterPagerAdapter(private val context: Context,
         }
         else {
             layout.imgScore.setImageDrawable(null)
-            // we don't need either of these *now*, but could at the tap of a button
-            psalterDb.scope.launch { psalter.loadAudio(psalterDb.downloader) }
+            // load score in bg. viewpager doesn't need it *now*, but could at the tap of a button
             psalterDb.scope.launch { psalter.loadScore(psalterDb.downloader) }
         }
         layout.tvPagerLyrics.text = text
@@ -103,7 +104,7 @@ class PsalterPagerAdapter(private val context: Context,
 
     fun toggleScore()  {
         showScore = !showScore
-        for((i, view) in views){
+        for((i, view) in views) {
             psalterDb.scope.launch { setScoreAndLyrics(psalterDb.getIndex(i)!!, view) }
         }
     }

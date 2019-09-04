@@ -22,10 +22,7 @@ class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder(
     fun skipToNext() { player.skipToNext() }
     fun play(psalter: Psalter, shuffling: Boolean){
         player.setShuffleMode( if (shuffling) PlaybackStateCompat.SHUFFLE_MODE_ALL else PlaybackStateCompat.SHUFFLE_MODE_NONE)
-        if(!isPlaying){
-            player.playFromMediaId(psalter.id.toString(), null)
-            Logger.playbackStarted(psalter.title, shuffling)
-        }
+        if(!isPlaying) player.playFromMediaId(psalter.id.toString(), null)
     }
     fun startService(context: Context){
         context.startService(Intent(context, MediaService::class.java))
