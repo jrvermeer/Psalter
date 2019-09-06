@@ -28,6 +28,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import com.google.android.material.snackbar.Snackbar
 import com.jrvermeer.psalter.*
 import com.jrvermeer.psalter.helpers.IntentHelper
 import com.jrvermeer.psalter.helpers.StorageHelper
@@ -74,14 +75,14 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         setupEventHandlers()
     }
 
-    override fun onResume() {
-        super.onResume()
+    override fun onStart() {
+        super.onStart()
         // initialize media service
         bindService(Intent(this@MainActivity, MediaService::class.java), mConnection, Service.BIND_AUTO_CREATE)
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         unbindService(mConnection)
     }
 
@@ -144,9 +145,16 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             R.id.action_shuffle -> shuffle(true)
             R.id.action_rate -> startActivity(IntentHelper.RateIntent)
             R.id.action_sendfeedback -> startActivity(IntentHelper.FeedbackIntent)
+            R.id.action_download_all -> queueDownloads()
             else -> return false
         }
         return true
+    }
+
+    private fun queueDownloads(){
+        val snack = Snackbar.make(mainCoordLayout, "Check notification for progress.", Snackbar.LENGTH_INDEFINITE)
+        snack.setAction("Ok") { snack.dismiss() }.show()
+        launch { psalterDb.downloader.queueAllDownloads(psalterDb) }
     }
 
     private fun goToRandom() {

@@ -14,6 +14,10 @@
         android:title="@string/action_random"
         app:showAsAction="ifRoom"
         android:icon="@drawable/ic_casino_white_24dp"/>
+    <item android:id="@+id/action_download_all"
+        android:orderInCategory="14"
+        android:title="Download All"
+        app:showAsAction="never" />
     <item android:id="@+id/action_shuffle"
         android:orderInCategory="15"
         android:title="@string/action_shuffle"

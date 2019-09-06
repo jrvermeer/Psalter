@@ -9,7 +9,10 @@ import androidx.annotation.DrawableRes
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.view.View
 import android.widget.Toast
+import java.io.File
 import java.util.ArrayList
+
+val Context.storageDir: File? get() = this.getExternalFilesDir(null)
 
 fun String.allIndexesOf(query: String): List<Int> {
     val rtn = ArrayList<Int>()

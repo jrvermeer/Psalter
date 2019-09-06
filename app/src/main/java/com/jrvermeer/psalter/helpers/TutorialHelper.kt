@@ -24,14 +24,14 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
     }
 
     @JvmOverloads
-    fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int, transparent: Boolean = false) {
+    fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int, tint: Boolean = true) {
         val shown = storage.getBoolean(prefTutorialShown)
         if (!shown && view != null) {
             if (targetSequence == null) targetSequence = getTargetSequence()
             targetSequence!!.target(TapTarget.forView(view,
                     context.getString(title),
                     context.getString(description))
-                    .transparentTarget(transparent))
+                    .tintTarget(tint))
             targetSequence!!.start()
             storage.setBoolean(prefTutorialShown, true)
         }
@@ -41,7 +41,7 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
         showTutorial(fab,
                 R.string.pref_tutorialshown_fablongpress,
                 R.string.tutorial_fab_title,
-                R.string.tutorial_fab_description, true)
+                R.string.tutorial_fab_description, false)
     }
 
     fun showShuffleReminderTutorial(fab: View) {
@@ -62,7 +62,7 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
         showTutorial(view,
                 R.string.pref_tutorialshown_showscore,
                 R.string.tutorial_showscore_title,
-                R.string.tutorial_showscore_description, true)
+                R.string.tutorial_showscore_description, false)
     }
 
     override fun onSequenceFinish() {

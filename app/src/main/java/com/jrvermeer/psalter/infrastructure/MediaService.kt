@@ -42,6 +42,7 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         private const val NOTIFICATION_ID = 1234
         private const val NOTIFICATION_CHANNEL_ID = "DefaultChannel"
         private const val NOTIFICATION_CHANNEL_NAME = "Playback Notification"
+        private const val MAX_RETRY_COUNT = 5
 
         // MediaButtonReceiver.buildMediaButtonPendingIntent doesn't work for instant apps?
         const val ACTION_SKIP_TO_NEXT = "ACTION_SKIP_TO_NEXT"
@@ -106,7 +107,7 @@ class MediaService : Service(), CoroutineScope by MainScope() {
                 launch {
                     // can't transition from stopped to playing, must prepare
                     if(mediaSession.controller.playbackState.state == PlaybackStateCompat.STATE_STOPPED){
-                        prepareNewPsalter(psalter, false)
+                        prepareNewPsalter(psalter)
                     }
                     updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     mediaPlayer.start()
@@ -154,15 +155,26 @@ class MediaService : Service(), CoroutineScope by MainScope() {
             val psalter = psalterDb.getIndex(mediaId?.toInt()!!)
             Logger.playbackStarted(psalter?.title ?: "wtf", binder.isShuffling)
             launch {
-                if(prepareNewPsalter(psalter, false)) binder.play()
+                if(prepareNewPsalter(psalter)) binder.play()
                 else this@MediaService.toast("Audio unavailable for ${psalter?.title}")
             }
         }
+
+        // Gotcha: if user tries to SkipToNext multiple times before the first ones finish downloading, the audio and viewpager
+        // can get out of sync really easily. So we need to hold on to current skipping job, and cancel it when a new one is started.
+        var skipping: Job? = null
         override fun onSkipToNext() {
             Logger.skipToNext(psalter!!)
             launch {
-                if(prepareNewPsalter(psalterDb.getRandom(), true)){
-                    binder.play()
+                val oldJob = skipping
+                skipping = this.coroutineContext[Job] // we need to update current job before cancelandjoin
+                oldJob?.cancelAndJoin() // cancel previous skip (if any) and wait for it to finish (should be really quick)
+                var retryNum = 1
+                while(retryNum++ < MAX_RETRY_COUNT && isActive) {
+                    if(prepareNewPsalter(psalterDb.getRandom())) {
+                        binder.play()
+                        break
+                    }
                 }
             }
         }
@@ -172,16 +184,12 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         return binder
     }
 
-    private suspend fun prepareNewPsalter(psalter: Psalter?, skipIfFailed: Boolean): Boolean {
+    private suspend fun prepareNewPsalter(psalter: Psalter?): Boolean {
         if(psalter == null) return false
         mediaPlayer.reset() // stop audio, we're going to a different page
         currentVerse = 1
         updateMetaData(psalter)
-        val audioUri = psalter.loadAudio(psalterDb.downloader)
-        if(audioUri == null){
-            if(skipIfFailed) binder.skipToNext()
-            return false
-        }
+        val audioUri = psalter.loadAudio(psalterDb.downloader) ?: return false
         psalter.loadScore(psalterDb.downloader)
         this.psalter = psalter
         mutex.withLock {

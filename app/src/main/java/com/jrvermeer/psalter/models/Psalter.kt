@@ -45,12 +45,12 @@ data class Psalter (
     }
 
     private suspend fun getFile(downloader: DownloadHelper, path: String): File? {
-        try{
+        return try{
             // try getting from internal storage
-            var file: File? = File(downloader.storageDir, path)
+            var file: File? = File(downloader.saveDir, path)
             // try downloading
             if(file?.exists() == false) file = downloader.downloadFile(path)
-            return if(file?.exists() == true) file else null
-        } catch (ex: Exception) { return null }
+            if(file?.exists() == true) file else null
+        } catch (ex: Exception) { null }
     }
 }
