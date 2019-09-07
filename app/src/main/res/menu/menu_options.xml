@@ -14,9 +14,9 @@
         android:title="@string/action_random"
         app:showAsAction="ifRoom"
         android:icon="@drawable/ic_casino_white_24dp"/>
-    <item android:id="@+id/action_download_all"
+    <item android:id="@+id/action_downloadAll"
         android:orderInCategory="14"
-        android:title="Download All"
+        android:title="@string/action_enableOffline"
         app:showAsAction="never" />
     <item android:id="@+id/action_shuffle"
         android:orderInCategory="15"
@@ -26,14 +26,14 @@
         android:orderInCategory="16"
         android:title="@string/action_rate"
         app:showAsAction="never" />
-    <item android:id="@+id/action_sendfeedback"
+    <item android:id="@+id/action_sendFeedback"
         android:orderInCategory="17"
-        android:title="@string/action_sendfeedback"
+        android:title="@string/action_sendFeedback"
         app:showAsAction="never"/>
     <item
-        android:id="@+id/action_nightmode"
+        android:id="@+id/action_nightMode"
         android:orderInCategory="100"
-        android:title="@string/action_nightmode"
+        android:title="@string/action_nightMode"
         app:showAsAction="never"
         android:checkable="true"/>
 </menu>

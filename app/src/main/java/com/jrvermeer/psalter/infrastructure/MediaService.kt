@@ -18,16 +18,16 @@ import androidx.core.app.NotificationManagerCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.media.app.NotificationCompat.MediaStyle
-import androidx.media.session.MediaButtonReceiver
 
 import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.ui.MainActivity
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.helpers.AudioHelper
-import com.jrvermeer.psalter.toast
+import com.jrvermeer.psalter.models.MessageLength
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -83,10 +83,12 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         Logger.d("MediaService started (${intent?.action})")
         when(intent?.action) {
             ACTION_DELETE -> stopSelf()
-            ACTION_SKIP_TO_NEXT -> binder.skipToNext()
             ACTION_STOP -> binder.stop()
             ACTION_PLAY -> binder.play()
-            else -> MediaButtonReceiver.handleIntent(mediaSession, intent)
+            ACTION_SKIP_TO_NEXT -> {
+                Logger.skipToNext(psalter)
+                binder.skipToNext()
+            }
         }
         return START_NOT_STICKY
     }
@@ -130,14 +132,16 @@ class MediaService : Service(), CoroutineScope by MainScope() {
             mediaSession.isActive = false
         }
 
+        private fun showShuffleMessage(){
+            binder.sendMessageToActivity("Shuffling", MessageLength.Short)
+        }
+
         override fun onSetShuffleMode(shuffleMode: Int) {
             mediaSession.setShuffleMode(shuffleMode)
             if(binder.isPlaying) {
                 updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                 updateNotification()
-            }
-            if (binder.isShuffling) {
-                toast("Shuffling")
+                if (binder.isShuffling) showShuffleMessage()
             }
         }
 
@@ -152,11 +156,14 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         }
 
         override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
-            val psalter = psalterDb.getIndex(mediaId?.toInt()!!)
-            Logger.playbackStarted(psalter?.title ?: "wtf", binder.isShuffling)
+            val psalter = psalterDb.getIndex(mediaId?.toInt()!!) ?: return
+            Logger.playbackStarted(psalter.title, binder.isShuffling)
             launch {
-                if(prepareNewPsalter(psalter)) binder.play()
-                else this@MediaService.toast("Audio unavailable for ${psalter?.title}")
+                if(prepareNewPsalter(psalter)) {
+                    binder.play()
+                    if(binder.isShuffling) showShuffleMessage()
+                }
+                else binder.sendMessageToActivity("Audio unavailable for ${psalter.title}", MessageLength.Long)
             }
         }
 
@@ -164,12 +171,11 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         // can get out of sync really easily. So we need to hold on to current skipping job, and cancel it when a new one is started.
         var skipping: Job? = null
         override fun onSkipToNext() {
-            Logger.skipToNext(psalter!!)
             launch {
                 val oldJob = skipping
-                skipping = this.coroutineContext[Job] // we need to update current job before cancelandjoin
+                skipping = this.coroutineContext[Job] // we need to update current job before cancelAndJoin
                 oldJob?.cancelAndJoin() // cancel previous skip (if any) and wait for it to finish (should be really quick)
-                var retryNum = 1
+                var retryNum = 0
                 while(retryNum++ < MAX_RETRY_COUNT && isActive) {
                     if(prepareNewPsalter(psalterDb.getRandom())) {
                         binder.play()
@@ -177,6 +183,18 @@ class MediaService : Service(), CoroutineScope by MainScope() {
                     }
                 }
             }
+        }
+
+        // we're only overriding this so we can log the skipToNext event
+        override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
+            (mediaButtonEvent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as KeyEvent?)?.run {
+                if(action == KeyEvent.ACTION_DOWN // action fires twice: button down && up.
+                        && keyCode == KeyEvent.KEYCODE_MEDIA_NEXT // skip to next
+                        && ((mediaSession.controller.playbackState.actions and PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0L)) { // next is a valid action
+                    Logger.skipToNext(psalter)
+                }
+            }
+            return super.onMediaButtonEvent(mediaButtonEvent)
         }
     }
 
@@ -192,8 +210,8 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         val audioUri = psalter.loadAudio(psalterDb.downloader) ?: return false
         psalter.loadScore(psalterDb.downloader)
         this.psalter = psalter
-        mutex.withLock {
-            mediaPlayer.reset() // cya: multiple coroutines could be trying to set datasource at the same time here
+        mutex.withLock { // cya: multiple coroutines could be trying to set datasource at the same time here, and who knows what state mediaPlayer is in after suspending
+            mediaPlayer.reset()
             mediaPlayer.setDataSource(this, audioUri)
             mediaPlayer.prepare()
         }

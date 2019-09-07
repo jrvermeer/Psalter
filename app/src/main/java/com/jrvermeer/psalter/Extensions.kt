@@ -9,10 +9,10 @@ import androidx.annotation.DrawableRes
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.view.View
 import android.widget.Toast
+import com.google.android.material.snackbar.Snackbar
+import com.jrvermeer.psalter.infrastructure.MediaServiceBinder
 import java.io.File
 import java.util.ArrayList
-
-val Context.storageDir: File? get() = this.getExternalFilesDir(null)
 
 fun String.allIndexesOf(query: String): List<Int> {
     val rtn = ArrayList<Int>()
@@ -31,10 +31,6 @@ fun Drawable.invertColors(): Drawable {
             0f, 0f, -1.0f, 0f, 255f, // blue
             0f, 0f, 0f, 1.0f, 0f))  // alpha
     return this
-}
-
-fun Context.toast(message: String, length: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, message, length).show()
 }
 
 fun View.show(){

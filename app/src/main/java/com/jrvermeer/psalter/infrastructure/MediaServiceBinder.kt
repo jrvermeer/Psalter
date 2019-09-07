@@ -6,11 +6,12 @@ import android.os.Binder
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import com.jrvermeer.psalter.models.MessageLength
 import com.jrvermeer.psalter.models.Psalter
 
 class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder() {
-
     private val player = mediaSession.controller.transportControls
+    private var activityMessageHandler: ((String, MessageLength) -> Unit)? = null
 
     val isPlaying get() = mediaSession.controller.playbackState?.state == PlaybackStateCompat.STATE_PLAYING
     val isShuffling get() = mediaSession.controller.shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL
@@ -26,6 +27,13 @@ class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder(
     }
     fun startService(context: Context){
         context.startService(Intent(context, MediaService::class.java))
+    }
+
+    fun onMessage(handler: (String, MessageLength) -> Unit){
+        activityMessageHandler = handler
+    }
+    fun sendMessageToActivity(message: String, length: MessageLength){
+        activityMessageHandler?.invoke(message, length)
     }
 
     fun registerCallback(callback: MediaControllerCompat.Callback) {

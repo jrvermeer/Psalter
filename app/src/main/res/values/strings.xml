@@ -4,15 +4,17 @@
     <string name="pref_nightmode">key_nightmode</string>
     <string name="pref_lastindex">key_lastindex</string>
     <string name="pref_showScore">key_showscore</string>
+    <string name="pref_enableOffline">key_enableOffline</string>
     <string name="mediaBaseUrl">https://github.com/jrvermeer/PsalterFiles/raw/master/</string>
 
 
-    <string name="action_nightmode">Night Mode</string>
+    <string name="action_nightMode">Night Mode</string>
     <string name="action_random">Random</string>
     <string name="action_rate">Rate App</string>
     <string name="action_search">Search</string>
     <string name="action_shuffle">Shuffle Audio</string>
-    <string name="action_sendfeedback">Send Feedback</string>
+    <string name="action_sendFeedback">Send Feedback</string>
+    <string name="action_enableOffline">Enable Offline</string>
 
     <string name="pref_tutorialshown_fabreminder">pref_tutorialshown_fabreminder</string>
     <string name="tutorial_fabreminder_title">You may have forgotten...</string>

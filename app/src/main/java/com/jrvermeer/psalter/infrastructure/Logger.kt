@@ -46,8 +46,8 @@ object Logger {
         event(if (shuffling) LogEvent.ShufflePsalter else LogEvent.PlayPsalter, params)
     }
 
-    fun skipToNext(skippedPsalter: Psalter){
-        val params = mapOf("SkippedPsalter" to skippedPsalter.title)
+    fun skipToNext(skippedPsalter: Psalter?){
+        val params = mapOf("SkippedPsalter" to (skippedPsalter?.title ?: "null"))
         event(LogEvent.SkipToNext, params)
     }
 
