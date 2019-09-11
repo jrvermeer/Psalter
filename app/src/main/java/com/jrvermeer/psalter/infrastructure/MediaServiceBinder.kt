@@ -11,7 +11,6 @@ import com.jrvermeer.psalter.models.Psalter
 
 class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder() {
     private val player = mediaSession.controller.transportControls
-    private var activityMessageHandler: ((String, MessageLength) -> Unit)? = null
 
     val isPlaying get() = mediaSession.controller.playbackState?.state == PlaybackStateCompat.STATE_PLAYING
     val isShuffling get() = mediaSession.controller.shuffleMode == PlaybackStateCompat.SHUFFLE_MODE_ALL
@@ -28,17 +27,25 @@ class MediaServiceBinder(private val mediaSession: MediaSessionCompat) : Binder(
     fun startService(context: Context){
         context.startService(Intent(context, MediaService::class.java))
     }
-
-    fun onMessage(handler: (String, MessageLength) -> Unit){
-        activityMessageHandler = handler
-    }
-    fun sendMessageToActivity(message: String, length: MessageLength){
-        activityMessageHandler?.invoke(message, length)
-    }
-
     fun registerCallback(callback: MediaControllerCompat.Callback) {
         mediaSession.controller.registerCallback(callback)
         callback.onPlaybackStateChanged(mediaSession.controller.playbackState)
         callback.onMetadataChanged(mediaSession.controller.metadata)
+    }
+
+    private var beginShufflingHandler: (() -> Unit)? = null
+    fun setBeginShufflingHandler(handler: () -> Unit) {
+        beginShufflingHandler = handler
+    }
+    fun onBeginShuffling(){
+        beginShufflingHandler?.invoke()
+    }
+
+    private var audioUnavailableHandler: ((Psalter) -> Unit)? = null
+    fun setAudioUnavailableHandler(handler: (Psalter) -> Unit){
+        audioUnavailableHandler = handler
+    }
+    fun onAudioUnavailable(psalter: Psalter){
+        audioUnavailableHandler?.invoke(psalter)
     }
 }

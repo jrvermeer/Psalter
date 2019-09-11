@@ -27,6 +27,7 @@ import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.ui.MainActivity
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.helpers.AudioHelper
+import com.jrvermeer.psalter.helpers.StorageHelper
 import com.jrvermeer.psalter.models.MessageLength
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -56,6 +57,7 @@ class MediaService : Service(), CoroutineScope by MainScope() {
     private lateinit var psalterDb: PsalterDb
     private lateinit var notificationManager: NotificationManagerCompat
     private lateinit var mediaSession: MediaSessionCompat
+    private lateinit var storage: StorageHelper
     private val mutex = Mutex()
     private val mediaPlayer = MediaPlayer()
     private var psalter: Psalter? = null
@@ -74,6 +76,8 @@ class MediaService : Service(), CoroutineScope by MainScope() {
 
         binder = MediaServiceBinder(mediaSession)
         audioHelper = AudioHelper(this, binder, mediaPlayer)
+
+        storage = StorageHelper(this)
 
         updatePlaybackState(PlaybackStateCompat.STATE_NONE)
         registerReceiver(audioHelper.becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
@@ -133,7 +137,7 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         }
 
         private fun showShuffleMessage(){
-            binder.sendMessageToActivity("Shuffling", MessageLength.Short)
+            binder.onBeginShuffling()
         }
 
         override fun onSetShuffleMode(shuffleMode: Int) {
@@ -161,9 +165,10 @@ class MediaService : Service(), CoroutineScope by MainScope() {
             launch {
                 if(prepareNewPsalter(psalter)) {
                     binder.play()
+                    storage.playCount++
                     if(binder.isShuffling) showShuffleMessage()
                 }
-                else binder.sendMessageToActivity("Audio unavailable for ${psalter.title}", MessageLength.Long)
+                else binder.onAudioUnavailable(psalter)
             }
         }
 

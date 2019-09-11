@@ -1,23 +1,28 @@
 <resources>
     <string name="app_name">Psalter</string>
-
-    <string name="pref_nightmode">key_nightmode</string>
-    <string name="pref_lastindex">key_lastindex</string>
-    <string name="pref_showScore">key_showscore</string>
-    <string name="pref_enableOffline">key_enableOffline</string>
     <string name="mediaBaseUrl">https://github.com/jrvermeer/PsalterFiles/raw/master/</string>
-
 
     <string name="action_nightMode">Night Mode</string>
     <string name="action_random">Random</string>
-    <string name="action_rate">Rate App</string>
     <string name="action_search">Search</string>
     <string name="action_shuffle">Shuffle Audio</string>
     <string name="action_sendFeedback">Send Feedback</string>
     <string name="action_enableOffline">Enable Offline</string>
 
+    <string name="pref_nightmode">key_nightmode</string>
+    <string name="pref_lastindex">key_lastindex</string>
+    <string name="pref_showScore">key_showscore</string>
+    <string name="pref_enableOffline">key_enableOffline</string>
+    <string name="pref_fabLongPressCount">key_fabLongPressCount</string>
+    <string name="pref_launchCount">key_launchCount</string>
+    <string name="pref_playCount">key_playCount</string>
+    <string name="pref_ratePromptCount">key_ratePromptCount</string>
+    <string name="pref_lastRatePromptShownTime">key_lastRateDialogShownTime</string>
+    <string name="pref_neverShowRatePromptAgain">key_neverShowRatePromptAgain</string>
+
+
     <string name="pref_tutorialshown_fabreminder">pref_tutorialshown_fabreminder</string>
-    <string name="tutorial_fabreminder_title">You may have forgotten...</string>
+    <string name="tutorial_fabreminder_title">You may have forgotten…</string>
     <string name="tutorial_fabreminder_description">You can start shuffling by pressing and holding the play button. It really is more convenient.</string>
 
     <string name="pref_tutorialshown_fablongpress">pref_tutorialshown_fablongpress</string>
@@ -31,9 +36,6 @@
     <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore_2</string>
     <string name="tutorial_showscore_title"> New! Updated music score images!</string>
     <string name="tutorial_showscore_description">This button will toggle them on or off</string>
-
-    <string name="request_writestorage_message">In order to download and use audio recordings and music score, Psalter needs access to external storage.</string>
-    <string name="download_complete_message">Audio and score are now available! Enjoy!</string>
 
     <string-array name="search_ignore_strings">
         <item>\'</item>

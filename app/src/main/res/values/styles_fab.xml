@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="PrimaryFab">
+        <item name="colorAccent">@color/colorPrimaryFabBackground</item>
+    </style>
+    <style name="SecondaryFab">
+        <item name="colorAccent">@color/colorSecondaryFabBackground</item>
+    </style>
+</resources>

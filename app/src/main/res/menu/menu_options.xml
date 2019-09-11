@@ -22,10 +22,6 @@
         android:orderInCategory="15"
         android:title="@string/action_shuffle"
         app:showAsAction="never" />
-    <item android:id="@+id/action_rate"
-        android:orderInCategory="16"
-        android:title="@string/action_rate"
-        app:showAsAction="never" />
     <item android:id="@+id/action_sendFeedback"
         android:orderInCategory="17"
         android:title="@string/action_sendFeedback"

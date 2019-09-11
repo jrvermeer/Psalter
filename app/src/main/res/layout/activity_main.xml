@@ -38,7 +38,7 @@
             <androidx.viewpager.widget.PagerTitleStrip
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/PagerTitleStrip"></androidx.viewpager.widget.PagerTitleStrip>
+                android:textAppearance="@style/PagerTitleStrip" />
         </androidx.viewpager.widget.ViewPager>
 
         <TableLayout
@@ -74,7 +74,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="88dp"
-        android:theme="?attr/secondaryFabStyle"
+        android:theme="@style/SecondaryFab"
         android:src="@drawable/ic_clef_3"
         app:fabSize="mini"/>
 
@@ -85,6 +85,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
+        android:theme="@style/PrimaryFab"
         android:src="@drawable/ic_play_arrow_white_24dp"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

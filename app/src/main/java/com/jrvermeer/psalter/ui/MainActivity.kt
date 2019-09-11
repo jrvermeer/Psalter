@@ -28,8 +28,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatDelegate
 import com.google.android.material.snackbar.Snackbar
 import com.jrvermeer.psalter.*
+import com.jrvermeer.psalter.helpers.DialogHelper
 import com.jrvermeer.psalter.helpers.IntentHelper
 import com.jrvermeer.psalter.helpers.StorageHelper
 import com.jrvermeer.psalter.helpers.TutorialHelper
@@ -41,6 +43,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
     private lateinit var storage: StorageHelper
+    private lateinit var dialog: DialogHelper
     private lateinit var psalterDb: PsalterDb
     private lateinit var tutorials: TutorialHelper
     private lateinit var searchMenuItem: MenuItem
@@ -50,14 +53,17 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     private val selectedPsalter get() = psalterDb.getIndex(viewpager.currentItem)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        storage = StorageHelper(this)
+        AppCompatDelegate.setDefaultNightMode(
+                if(storage.nightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
         super.onCreate(savedInstanceState)
         Logger.init(this)
-        Logger.d("MainActivity created")
-        storage = StorageHelper(this)
+        storage.launchCount++
+        dialog = DialogHelper(this, storage) { msg -> snack(msg) }
         psalterDb = PsalterDb(this, this)
 
         // must initialize theme before calling setContentView
-        setTheme(if (storage.nightMode) R.style.AppTheme_Dark else R.style.AppTheme_Light)
+//        setTheme(if (storage.nightMode) R.style.AppTheme_Dark else R.style.AppTheme_Light)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar as Toolbar)
 
@@ -84,7 +90,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         super.onStop()
         unbindService(mConnection)
     }
-
     override fun onBackPressed() {
         if (lvSearchResults.isShown) {
             collapseSearchView()
@@ -96,6 +101,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         menuInflater.inflate(R.menu.menu_options, menu)
         menu.findItem(R.id.action_nightMode).isChecked = storage.nightMode
         menu.findItem(R.id.action_downloadAll).isVisible = !storage.offlineEnabled
+        if(storage.fabLongPressCount > 7) menu.findItem(R.id.action_shuffle).isVisible = false
         initSearchView(menu)
         searchMode = SearchMode.Psalter
         return true
@@ -106,7 +112,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             R.id.action_nightMode -> toggleNightMode()
             R.id.action_random -> goToRandom()
             R.id.action_shuffle -> shuffle(true)
-            R.id.action_rate -> startActivity(IntentHelper.RateIntent)
             R.id.action_sendFeedback -> startActivity(IntentHelper.FeedbackIntent)
             R.id.action_downloadAll -> queueDownloads()
             else -> return false
@@ -232,11 +237,14 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             val psalter = selectedPsalter
             mediaService?.play(psalter!!, false)
             mediaService?.startService(this)
+            dialog.showRateDialogIfAppropriate()
         }
     }
 
     private fun shuffle(showLongPressTutorial: Boolean = false): Boolean {
         if(showLongPressTutorial) tutorials.showShuffleReminderTutorial(fab)
+        else storage.fabLongPressCount++
+
         mediaService?.play(selectedPsalter!!, true)
         mediaService?.startService(this)
         return true
@@ -276,7 +284,12 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             Logger.d("MediaService bound")
             mediaService = iBinder as MediaServiceBinder
             mediaService?.registerCallback(callback)
-            mediaService?.onMessage { msg, len -> snack(msg, len) }
+            mediaService?.setBeginShufflingHandler {
+                snack("Shuffling", MessageLength.Short, "Skip") {
+                    mediaService?.skipToNext()
+                }
+            }
+            mediaService?.setAudioUnavailableHandler { snack("Audio unavailable for ${it.title}") }
         }
 
         override fun onServiceDisconnected(componentName: ComponentName) {
@@ -286,7 +299,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
     private var callback: MediaControllerCompat.Callback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
-            if (mediaService?.isPlaying == true) fab.setImageResourceSafe(R.drawable.ic_stop_white_24dp)
+            if (mediaService?.isPlaying == true) fab.setImageResourceSafe(R.drawable.ic_stop_white_36dp)
             else fab.setImageResourceSafe(R.drawable.ic_play_arrow_white_24dp)
         }
 
@@ -354,19 +367,23 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     private fun snack(msg: String, len: MessageLength = MessageLength.Long){
         Snackbar.make(mainCoordLayout, msg, len.forSnack()).show()
     }
+    private fun snack(msg: String, len: MessageLength, action: String, onClick: () -> Unit){
+        Snackbar.make(mainCoordLayout, msg, len.forSnack())
+                .setAction(action) { onClick() }.show()
+    }
 
     private fun FloatingActionButton.setChecked(checked: Boolean) {
         val color: Int = if (checked && storage.nightMode) Color.WHITE
         else if (checked) ContextCompat.getColor(this@MainActivity, R.color.colorAccent)
-        else if (storage.nightMode) ContextCompat.getColor(this@MainActivity, R.color.colorUnselectedInverse)
+        else if (storage.nightMode) ContextCompat.getColor(this@MainActivity, R.color.colorUnselected) // Inverse?
         else ContextCompat.getColor(this@MainActivity, R.color.colorUnselected)
 
         this.drawable.mutate().setTint(color)
     }
 
     private fun TextView.deselect(vararg deselect: TextView){
-        deselect.forEach { tv -> TextViewCompat.setTextAppearance(tv, R.style.Button) }
-        TextViewCompat.setTextAppearance(this, R.style.Button_Selected)
+        deselect.forEach { tv -> TextViewCompat.setTextAppearance(tv, R.style.Button_RadioUnselected) }
+        TextViewCompat.setTextAppearance(this, R.style.Button)
     }
 
     private fun Menu.hideExcept(exception: MenuItem) {
