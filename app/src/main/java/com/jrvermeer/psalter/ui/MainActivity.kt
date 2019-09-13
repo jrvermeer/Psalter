@@ -12,7 +12,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -83,8 +82,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     }
 
     override fun onStop() {
-        super.onStop()
+        mediaService?.unregisterCallbacks()
         unbindService(mConnection)
+        super.onStop()
     }
     override fun onBackPressed() {
         if (lvSearchResults.isShown) {
@@ -255,27 +255,31 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
             Logger.d("MediaService bound")
             mediaService = iBinder as MediaServiceBinder
-            mediaService?.registerCallback(callback)
-            mediaService?.setBeginShufflingHandler {
-                snack("Shuffling", MessageLength.Short, "Skip") {
-                    mediaService?.skipToNext()
-                }
-            }
-            mediaService?.setAudioUnavailableHandler { snack("Audio unavailable for ${it.title}") }
+            mediaService?.registerCallbacks(callback)
         }
 
         override fun onServiceDisconnected(componentName: ComponentName) {
-            Logger.d("MediaService unbound")
+            // this method IS NOT CALLED on unbindService(), only when service crashes or something. So it's pretty useless and misleading
         }
     }
 
-    private var callback: MediaControllerCompat.Callback = object : MediaControllerCompat.Callback() {
+    private var callback = object : MediaServiceCallbacks () {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
             fab.isSelected = mediaService?.isPlaying ?: false
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             if (mediaService?.isPlaying == true) viewpager.currentItem = metadata!!.description.mediaId!!.toInt()
+        }
+
+        override fun onAudioUnavailable(psalter: Psalter) {
+            snack("Audio unavailable for ${psalter.title}")
+        }
+
+        override fun onBeginShuffling() {
+            snack("Shuffling", MessageLength.Short, "Skip") {
+                mediaService?.skipToNext()
+            }
         }
     }
 
