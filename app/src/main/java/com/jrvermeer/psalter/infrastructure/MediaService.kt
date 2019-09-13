@@ -182,10 +182,11 @@ class MediaService : Service(), CoroutineScope by MainScope() {
                 oldJob?.cancelAndJoin() // cancel previous skip (if any) and wait for it to finish (should be really quick)
                 var retryNum = 0
                 while(retryNum++ < MAX_RETRY_COUNT && isActive) {
-                    if(prepareNewPsalter(psalterDb.getRandom())) {
+                    val next = psalterDb.getRandom()
+                    if(prepareNewPsalter(next)) {
                         binder.play()
                         break
-                    }
+                    } else binder.onAudioUnavailable(next)
                 }
             }
         }

@@ -40,7 +40,7 @@ data class Psalter (
     suspend fun loadScore(downloader: DownloadHelper): BitmapDrawable? {
         if(_score != null) return _score
         val file = getFile(downloader, scorePath) ?: return null
-        _score = Drawable.createFromPath(file.path) as BitmapDrawable
+        _score = Drawable.createFromPath(file.path) as BitmapDrawable?
         return _score
     }
 

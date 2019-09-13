@@ -1,21 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorLightText">#bdbdbd</color>
-
-    <!-- global, cya -->
     <color name="colorPrimary">#00695C</color>
     <color name="colorPrimaryDark">#004D40</color>
     <color name="colorAccent">#009688</color>
+    <color name="colorBackground">@android:color/white</color>
     <color name="colorPrimaryFabBackground">@color/colorAccent</color>
     <color name="colorSecondaryFabBackground">@android:color/white</color>
-    <color name="colorBackground">@android:color/white</color>
     <color name="colorUnselected">#aaa</color>
-
-    <!-- Dark Theme -->
-    <!--<color name="colorPrimaryInverse">#424242</color>-->
-    <!--<color name="colorPrimaryDarkInverse">#212121</color>-->
-    <!--<color name="colorAccentInverse">@color/colorPrimaryInverse</color>-->
-    <!--<color name="colorBackgroundInverse">@android:color/black</color>-->
-    <!--<color name="colorUnselectedInverse">#777</color>-->
-
 </resources>

@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Day (default) colors are defined in values/colors.xml, and for night mode are automatically overridden by values-night/colors.xml -->
+
+    <!-- Main app theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="buttonStyle">@style/Button</item>
+    </style>
+
+    <!-- Floating Action Button styles -->
+    <style name="PrimaryFab">
+        <item name="colorAccent">@color/colorPrimaryFabBackground</item>
+    </style>
+    <style name="SecondaryFab">
+        <item name="colorAccent">@color/colorSecondaryFabBackground</item>
+        <item name="fabSize">mini</item> <!-- not working -->
+    </style>
 
     <style name="PagerTitleStrip">
         <item name="android:textSize">20sp</item>
@@ -7,10 +26,6 @@
     </style>
 
     <style name="Button" parent="@style/Widget.AppCompat.Button.Borderless">
-        <item name="android:textColor">@color/colorAccent</item>
-    </style>
-
-    <style name="Button.RadioUnselected">
-        <item name="android:textColor">@color/colorLightText</item>
+        <item name="android:textColor">@color/button</item>
     </style>
 </resources>

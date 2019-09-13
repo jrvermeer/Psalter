@@ -10,31 +10,24 @@ import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
-import android.graphics.Color
 import android.os.IBinder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.core.content.ContextCompat
 import androidx.viewpager.widget.ViewPager
-import androidx.core.widget.TextViewCompat
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import android.text.InputType
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.widget.AppCompatButton
 import com.google.android.material.snackbar.Snackbar
 import com.jrvermeer.psalter.*
-import com.jrvermeer.psalter.helpers.DialogHelper
-import com.jrvermeer.psalter.helpers.IntentHelper
-import com.jrvermeer.psalter.helpers.StorageHelper
-import com.jrvermeer.psalter.helpers.TutorialHelper
+import com.jrvermeer.psalter.helpers.*
 import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
@@ -44,6 +37,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
     private lateinit var storage: StorageHelper
     private lateinit var dialog: DialogHelper
+    private lateinit var instant: InstantHelper
     private lateinit var psalterDb: PsalterDb
     private lateinit var tutorials: TutorialHelper
     private lateinit var searchMenuItem: MenuItem
@@ -53,29 +47,31 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     private val selectedPsalter get() = psalterDb.getIndex(viewpager.currentItem)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        storage = StorageHelper(this)
-        AppCompatDelegate.setDefaultNightMode(
-                if(storage.nightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
-        super.onCreate(savedInstanceState)
         Logger.init(this)
-        storage.launchCount++
+        // init helpers
+        storage = StorageHelper(this)
         dialog = DialogHelper(this, storage) { msg -> snack(msg) }
+        tutorials = TutorialHelper(this)
+        instant = InstantHelper(this)
+
+        // I'm told we have to do this before calling super()
+        AppCompatDelegate.setDefaultNightMode(if(storage.nightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
+        super.onCreate(savedInstanceState)
+
+        storage.launchCount++
         psalterDb = PsalterDb(this, this)
 
-        // must initialize theme before calling setContentView
-//        setTheme(if (storage.nightMode) R.style.AppTheme_Dark else R.style.AppTheme_Light)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar as Toolbar)
 
-        fabToggleScore.setChecked(storage.scoreShown)
+        fabToggleScore.isSelected = storage.scoreShown
         viewpager.adapter = PsalterPagerAdapter(this, psalterDb, storage.scoreShown, storage.nightMode)
                 .onPageCreated { v, i -> pageCreated(v, i) }
         viewpager.currentItem = storage.pageIndex
         lvSearchResults.adapter = PsalterSearchAdapter(this, psalterDb)
-
-        tutorials = TutorialHelper(this)
         tutorials.showShuffleTutorial(fab)
         tutorials.showScoreTutorial(fabToggleScore)
+        instant.transferInstantAppData()
 
         initEventHandlers()
     }
@@ -100,7 +96,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_options, menu)
         menu.findItem(R.id.action_nightMode).isChecked = storage.nightMode
-        menu.findItem(R.id.action_downloadAll).isVisible = !storage.offlineEnabled
+        menu.findItem(R.id.action_downloadAll).isVisible = !storage.allMediaDownloaded && !instant.isInstantApp
         if(storage.fabLongPressCount > 7) menu.findItem(R.id.action_shuffle).isVisible = false
         initSearchView(menu)
         searchMode = SearchMode.Psalter
@@ -123,7 +119,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         snack("Check notification for progress.")
         launch {
             psalterDb.downloader.queueAllDownloads(psalterDb)
-            storage.offlineEnabled = true
+            storage.allMediaDownloaded = true
         }
     }
 
@@ -143,30 +139,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         Logger.changeTheme(storage.nightMode)
         recreateSafe()
     }
-
-    private lateinit var _searchMode: SearchMode
-    private var searchMode
-        get() = _searchMode
-        set(mode) {
-            _searchMode = mode
-            when(mode) {
-                SearchMode.Lyrics -> {
-                    searchView.inputType = InputType.TYPE_CLASS_TEXT
-                    searchView.queryHint = "Enter search query"
-                    searchBtn_Lyrics.deselect(searchBtn_Psalter, searchBtn_Psalm)
-                }
-                SearchMode.Psalm -> {
-                    searchView.inputType = InputType.TYPE_CLASS_NUMBER
-                    searchView.queryHint = "Enter Psalm (1 - 150)"
-                    searchBtn_Psalm.deselect(searchBtn_Psalter, searchBtn_Lyrics)
-                }
-                SearchMode.Psalter -> {
-                    searchView.inputType = InputType.TYPE_CLASS_NUMBER
-                    searchView.queryHint = "Enter Psalter number (1 - 434)"
-                    searchBtn_Psalter.deselect(searchBtn_Psalm, searchBtn_Lyrics)
-                }
-            }
-        }
 
     private fun performPsalterSearch(psalterNumber: Int){
         if (psalterNumber in 1..434) {
@@ -227,7 +199,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         val adapter = viewpager.adapter as PsalterPagerAdapter
         storage.scoreShown = !storage.scoreShown
         adapter.toggleScore()
-        fabToggleScore.setChecked(storage.scoreShown)
+        fabToggleScore.isSelected = storage.scoreShown
         Logger.changeScore(storage.scoreShown)
     }
 
@@ -299,14 +271,37 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
     private var callback: MediaControllerCompat.Callback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
-            if (mediaService?.isPlaying == true) fab.setImageResourceSafe(R.drawable.ic_stop_white_36dp)
-            else fab.setImageResourceSafe(R.drawable.ic_play_arrow_white_24dp)
+            fab.isSelected = mediaService?.isPlaying ?: false
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             if (mediaService?.isPlaying == true) viewpager.currentItem = metadata!!.description.mediaId!!.toInt()
         }
     }
+
+    private lateinit var _searchMode: SearchMode
+    private var searchMode
+        get() = _searchMode
+        set(mode) {
+            _searchMode = mode
+            when(mode) {
+                SearchMode.Lyrics -> {
+                    searchView.inputType = InputType.TYPE_CLASS_TEXT
+                    searchView.queryHint = "Enter search query"
+                    searchBtn_Lyrics.deselect(searchBtn_Psalter, searchBtn_Psalm)
+                }
+                SearchMode.Psalm -> {
+                    searchView.inputType = InputType.TYPE_CLASS_NUMBER
+                    searchView.queryHint = "Enter Psalm (1 - 150)"
+                    searchBtn_Psalm.deselect(searchBtn_Psalter, searchBtn_Lyrics)
+                }
+                SearchMode.Psalter -> {
+                    searchView.inputType = InputType.TYPE_CLASS_NUMBER
+                    searchView.queryHint = "Enter Psalter number (1 - 434)"
+                    searchBtn_Psalter.deselect(searchBtn_Psalm, searchBtn_Lyrics)
+                }
+            }
+        }
 
     private fun initEventHandlers() {
         fab.setOnClickListener { togglePlay() }
@@ -358,7 +353,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
                 hideSearchResultsScreen()
                 hideSearchButtons()
-                invalidateOptionsMenu()
+                invalidateOptionsMenu() // rebuild menu
                 return true
             }
         })
@@ -372,18 +367,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
                 .setAction(action) { onClick() }.show()
     }
 
-    private fun FloatingActionButton.setChecked(checked: Boolean) {
-        val color: Int = if (checked && storage.nightMode) Color.WHITE
-        else if (checked) ContextCompat.getColor(this@MainActivity, R.color.colorAccent)
-        else if (storage.nightMode) ContextCompat.getColor(this@MainActivity, R.color.colorUnselected) // Inverse?
-        else ContextCompat.getColor(this@MainActivity, R.color.colorUnselected)
-
-        this.drawable.mutate().setTint(color)
-    }
-
-    private fun TextView.deselect(vararg deselect: TextView){
-        deselect.forEach { tv -> TextViewCompat.setTextAppearance(tv, R.style.Button_RadioUnselected) }
-        TextViewCompat.setTextAppearance(this, R.style.Button)
+    private fun AppCompatButton.deselect(vararg deselect: AppCompatButton){
+        this.isSelected = true
+        deselect.forEach { btn -> btn.isSelected = false }
     }
 
     private fun Menu.hideExcept(exception: MenuItem) {

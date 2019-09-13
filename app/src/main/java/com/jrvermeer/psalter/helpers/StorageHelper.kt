@@ -33,6 +33,10 @@ class StorageHelper(private val context: Context) {
         get() = getInt(R.string.pref_playCount)
         set(i) = setInt(R.string.pref_playCount, i)
 
+    var lastRatePromptTime
+        get() = getLong(R.string.pref_lastRatePromptShownTime)
+        set(l) = setLong(R.string.pref_lastRatePromptShownTime, l)
+
     var ratePromptCount
         get() = getInt(R.string.pref_ratePromptCount)
         set(i) = setInt(R.string.pref_ratePromptCount, i)
@@ -41,7 +45,7 @@ class StorageHelper(private val context: Context) {
         get() = getBoolean(R.string.pref_neverShowRatePromptAgain)
         set(b) = setBoolean(R.string.pref_neverShowRatePromptAgain, b)
 
-    var offlineEnabled
+    var allMediaDownloaded
         get() = getBoolean(R.string.pref_enableOffline)
         set(b) = setBoolean(R.string.pref_enableOffline, b)
 
@@ -59,8 +63,8 @@ class StorageHelper(private val context: Context) {
         sPref.edit().putInt(context.getString(id), i).apply()
     }
 
-    fun getLong(@StringRes id: Int, def: Long = 0L): Long {
-        return sPref.getLong(context.getString(id), 0L)
+    fun getLong(@StringRes id: Int): Long {
+        return sPref.getLong(context.getString(id), 0)
     }
     fun setLong(@StringRes id: Int, l: Long) {
         sPref.edit().putLong(context.getString(id), l).apply()

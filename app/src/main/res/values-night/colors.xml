@@ -2,6 +2,7 @@
 <resources>
     <color name="colorPrimary">#424242</color>
     <color name="colorPrimaryDark">#212121</color>
+
     <color name="colorBackground">@android:color/black</color>
     <color name="colorPrimaryFabBackground">@color/colorPrimary</color>
     <color name="colorSecondaryFabBackground">@color/colorPrimary</color>

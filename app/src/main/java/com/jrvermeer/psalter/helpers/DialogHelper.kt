@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.DialogInterface
 import android.view.View
 import com.jrvermeer.psalter.R
+import com.jrvermeer.psalter.infrastructure.Logger
+import java.util.concurrent.TimeUnit
 
 class DialogHelper(private val context: Context,
                    private val storage: StorageHelper,
@@ -12,7 +14,6 @@ class DialogHelper(private val context: Context,
 
     fun showRateDialogIfAppropriate() {
         if (!shouldShowDialog()) return
-
         storage.ratePromptCount++
         storage.setLong(R.string.pref_lastRatePromptShownTime, System.currentTimeMillis())
 
@@ -50,6 +51,7 @@ class DialogHelper(private val context: Context,
                     dismiss()
                     context.startActivity(IntentHelper.RateIntent)
                     storage.doNotShowRatePrompt = true
+                    Logger.feedback(true, true)
                 }
             }
             getButton(DialogInterface.BUTTON_NEGATIVE).run {
@@ -57,6 +59,7 @@ class DialogHelper(private val context: Context,
                 setOnClickListener {
                     dismiss()
                     resetRatePromptRequirements()
+                    Logger.feedback(true, false)
                 }
             }
             getButton(DialogInterface.BUTTON_NEUTRAL).run {
@@ -66,6 +69,7 @@ class DialogHelper(private val context: Context,
                     dismiss()
                     sendMessage("You. I like you.")
                     storage.doNotShowRatePrompt = true
+                    Logger.feedback(true, null)
                 }
             }
         }
@@ -80,6 +84,7 @@ class DialogHelper(private val context: Context,
                     dismiss()
                     context.startActivity(IntentHelper.FeedbackIntent)
                     storage.doNotShowRatePrompt = true
+                    Logger.feedback(false, true)
                 }
             }
             getButton(DialogInterface.BUTTON_NEGATIVE).run {
@@ -87,23 +92,25 @@ class DialogHelper(private val context: Context,
                 setOnClickListener {
                     dismiss()
                     resetRatePromptRequirements()
+                    Logger.feedback(false, false)
                 }
             }
         }
     }
 
     private fun shouldShowDialog(): Boolean {
-        //return true
+        // if prompt hasn't been shown yet, set it to now for the sake of calculation
+        if(storage.lastRatePromptTime <= 0) storage.lastRatePromptTime = System.currentTimeMillis()
+
         return !storage.doNotShowRatePrompt
                 && storage.launchCount > 10
                 && storage.playCount > 5
                 && enoughTimeSinceLastShow()
     }
     private fun enoughTimeSinceLastShow(): Boolean {
-        val lastShown = storage.getLong(R.string.pref_lastRatePromptShownTime, System.currentTimeMillis())
-        val daysSinceShown = (System.currentTimeMillis() - lastShown) / 1000.0 / 60 / 60 / 24
-        val daysToWait = 5 * storage.ratePromptCount + 5
-        return return daysSinceShown >= daysToWait
+        val daysSinceShown = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - storage.lastRatePromptTime)
+        val daysToWait = 5 * storage.ratePromptCount + 2
+        return daysSinceShown >= daysToWait
     }
     private fun resetRatePromptRequirements(){
         storage.launchCount = 0

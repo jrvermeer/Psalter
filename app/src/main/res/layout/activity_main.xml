@@ -49,21 +49,20 @@
             android:visibility="gone">
 
             <TableRow android:gravity="center" >
-
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalter"
                     android:text="Psalter #"
-                    android:theme="?attr/buttonStyle"/>
+                    android:textColor="@color/button" />
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Lyrics"
                     android:text="Lyrics"
-                    android:theme="?attr/buttonStyle"/>
+                    android:textColor="@color/button" />
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalm"
                     android:text="Psalm #"
-                    android:theme="?attr/buttonStyle"/>
+                    android:textColor="@color/button" />
             </TableRow>
         </TableLayout>
     </LinearLayout>
@@ -76,6 +75,7 @@
         android:layout_marginBottom="88dp"
         android:theme="@style/SecondaryFab"
         android:src="@drawable/ic_clef_3"
+        android:tint="@color/button"
         app:fabSize="mini"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -86,6 +86,6 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:theme="@style/PrimaryFab"
-        android:src="@drawable/ic_play_arrow_white_24dp"/>
+        android:src="@drawable/play_pause"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -71,6 +71,15 @@ object Logger {
             SearchMode.Psalm -> searchPsalm(query.toInt(), psalterChosen)
         }
     }
+    fun feedback(enjoying: Boolean, doSomethingAboutIt: Boolean?){
+        val action2: String = when (doSomethingAboutIt){
+            null -> "AlreadyDid"
+            true -> "Yes"
+            false -> "MaybeLater"
+        }
+        val params = mutableMapOf("Enjoying" to enjoying.toString(), "doSomethingAboutIt" to action2)
+        event(LogEvent.Feedback, params)
+    }
 
     fun event(event: LogEvent, params: Map<String, String>? = null) {
         FlurryAgent.logEvent(event.name, params)

@@ -31,7 +31,9 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
             targetSequence!!.target(TapTarget.forView(view,
                     context.getString(title),
                     context.getString(description))
-                    .tintTarget(tint))
+                    .tintTarget(tint)
+                    .textColor(android.R.color.white))
+
             targetSequence!!.start()
             storage.setBoolean(prefTutorialShown, true)
         }
@@ -48,7 +50,7 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
         showTutorial(fab, R.string.pref_tutorialshown_fabreminder,
                 R.string.tutorial_fabreminder_title,
                 R.string.tutorial_fabreminder_description,
-                true)
+                false)
     }
 
     fun showGoToPsalmTutorial(view: View) {
