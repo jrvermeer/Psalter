@@ -16,6 +16,7 @@
     <string name="pref_fabLongPressCount">key_fabLongPressCount</string>
     <string name="pref_launchCount">key_launchCount</string>
     <string name="pref_playCount">key_playCount</string>
+    <string name="pref_pageSelectionCount">key_pageSelectionCount</string>
     <string name="pref_ratePromptCount">key_ratePromptCount</string>
     <string name="pref_lastRatePromptShownTime">key_lastRateDialogShownTime</string>
     <string name="pref_neverShowRatePromptAgain">key_neverShowRatePromptAgain</string>
@@ -36,6 +37,10 @@
     <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore_2</string>
     <string name="tutorial_showscore_title"> New! Updated music score images!</string>
     <string name="tutorial_showscore_description">This button will toggle them on or off</string>
+
+    <string name="pref_tutorialShown_toolbarOverflow">pref_tutorialShown_toolbarOverflow</string>
+    <string name="tutorial_toolbarOverflow_title">Save your phone\'s storage!</string>
+    <string name="tutorial_toolbarOverflow_description">Music is now downloaded as needed. You can still enable offline listening in here</string>
 
     <string-array name="search_ignore_strings">
         <item>\'</item>

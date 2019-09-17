@@ -6,11 +6,13 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.AbsoluteSizeSpan
+import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.core.content.ContextCompat
 
 import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.R
@@ -71,7 +73,7 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
                 for (i in filterLyrics.allIndexesOf(query)) {
                     val iStart = getVerseStartIndex(filterLyrics, i)
 
-                    if (!verseHitIndices.contains(iStart)) { // if 1st occurance of query in this verse, add verse to display
+                    if (!verseHitIndices.contains(iStart)) { // if 1st occurrence of query in this verse, add verse to display
                         verseHitIndices.add(iStart)
                         val iEnd = getVerseEndIndex(filterLyrics, i)
                         if (!first) viewText.append("\n\n")
@@ -85,7 +87,8 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
                 while (iHighlightStart >= 0) {
                     val iHighlightEnd = iHighlightStart + query!!.length
                     viewText.setSpan(StyleSpan(Typeface.BOLD), iHighlightStart, iHighlightEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    viewText.setSpan(AbsoluteSizeSpan((holder.tvLyrics!!.textSize * 1.5).toInt()), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+//                    viewText.setSpan(AbsoluteSizeSpan((holder.tvLyrics!!.textSize * 1.5).toInt()), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    viewText.setSpan(ForegroundColorSpan(ContextCompat.getColor(context, R.color.colorAccent)), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     iHighlightStart = filterText.indexOf(query!!, iHighlightStart + 1)
                 }
 

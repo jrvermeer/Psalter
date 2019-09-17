@@ -13,10 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import java.io.BufferedInputStream
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
+import java.io.*
 import java.net.URL
 
 
@@ -30,6 +27,8 @@ class DownloadHelper(private val context: Context) {
     suspend fun downloadFile(path: String): File? = withContext(Dispatchers.IO) {
         val file = File(saveDir, path)
         val temp = File.createTempFile("prefix", "suffix")
+        var input: BufferedInputStream? = null
+        var output: FileOutputStream? = null
         try {
             val url = URL(baseUrl + path)
             val connection = url.openConnection()
@@ -37,8 +36,8 @@ class DownloadHelper(private val context: Context) {
             Logger.d("Downloading $path")
 
             // download the file
-            val input = BufferedInputStream(url.openStream(), 8192)
-            val output = FileOutputStream(temp.path)
+            input = BufferedInputStream(url.openStream(), 8192)
+            output = FileOutputStream(temp.path)
             val data = ByteArray(1024)
             var count: Int
             do {
@@ -49,19 +48,17 @@ class DownloadHelper(private val context: Context) {
             } while (true)
 
             output.flush()
-            output.close()
-            input.close()
-
             temp.copyTo(file, true)
-            temp.delete()
             Logger.d("Download Complete: $path")
             return@withContext file
         } catch (e: Exception) {
             if (e is CancellationException) Logger.d("Download Cancelled: $path")
-            else if (e !is FileNotFoundException) Logger.e("Error downloading $path", e)
+            else if (e !is IOException) Logger.e("Error downloading $path", e)
             return@withContext null
         } finally {
             if (temp.exists()) temp.delete()
+            output?.close()
+            input?.close()
         }
     }
 

@@ -2,7 +2,6 @@ package com.jrvermeer.psalter.ui.adaptors
 
 import android.content.Context
 import androidx.core.text.HtmlCompat
-import androidx.viewpager.widget.PagerAdapter
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +12,7 @@ import com.jrvermeer.psalter.infrastructure.Logger
 import com.jrvermeer.psalter.infrastructure.PsalterDb
 import com.jrvermeer.psalter.*
 import kotlinx.android.synthetic.main.psalter_layout.view.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
@@ -21,16 +21,15 @@ import java.util.concurrent.ConcurrentHashMap
  */
 
 class PsalterPagerAdapter(private val context: Context,
+                          private val scope: CoroutineScope,
                           private val psalterDb: PsalterDb,
                           private var showScore: Boolean,
                           private val nightMode: Boolean) : androidx.viewpager.widget.PagerAdapter() {
 
-    private var pageCreated: ((View, Int) -> Unit)? = null
     private val views = ConcurrentHashMap<Int, View>()
 
-    fun onPageCreated(handler: ((v: View, i: Int) -> Unit)) : PsalterPagerAdapter {
-        pageCreated = handler
-        return this
+    fun getView(i: Int): View {
+        return views[i]!!
     }
 
     override fun instantiateItem(collection: ViewGroup, position: Int): Any {
@@ -40,7 +39,7 @@ class PsalterPagerAdapter(private val context: Context,
             val inflater = LayoutInflater.from(context)
             val layout = inflater.inflate(R.layout.psalter_layout, collection, false) as ViewGroup
 
-            psalterDb.scope.launch { setScoreAndLyrics(psalter, layout) }
+            scope.launch { setScoreAndLyrics(psalter, layout) }
 
             layout.tvPagerHeading.text = psalter.heading
             layout.tvPagerPsalm.text = HtmlCompat.fromHtml(psalter.subtitleLink, HtmlCompat.FROM_HTML_MODE_LEGACY)
@@ -49,7 +48,6 @@ class PsalterPagerAdapter(private val context: Context,
             views[position] = layout
             collection.addView(layout)
 
-            pageCreated?.invoke(layout, position)
             return layout
         }
         catch (ex: Exception) {
@@ -79,7 +77,7 @@ class PsalterPagerAdapter(private val context: Context,
 
     private suspend fun setScoreAndLyrics(psalter: Psalter, layout: View) {
         // load audio in bg. viewpager never needs audio, but user could request it at tap of a button
-        psalterDb.scope.launch { psalter.loadAudio(psalterDb.downloader) }
+        scope.launch { psalter.loadAudio(psalterDb.downloader) }
         var text = psalter.lyrics
         if (showScore) {
             layout.scoreProgress.show()
@@ -97,7 +95,7 @@ class PsalterPagerAdapter(private val context: Context,
         else {
             layout.imgScore.setImageDrawable(null)
             // load score in bg. viewpager doesn't need it *now*, but could at the tap of a button
-            psalterDb.scope.launch { psalter.loadScore(psalterDb.downloader) }
+            scope.launch { psalter.loadScore(psalterDb.downloader) }
         }
         layout.tvPagerLyrics.text = text
     }
@@ -105,7 +103,7 @@ class PsalterPagerAdapter(private val context: Context,
     fun toggleScore()  {
         showScore = !showScore
         for((i, view) in views) {
-            psalterDb.scope.launch { setScoreAndLyrics(psalterDb.getIndex(i)!!, view) }
+            scope.launch { setScoreAndLyrics(psalterDb.getIndex(i)!!, view) }
         }
     }
 

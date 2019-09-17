@@ -21,6 +21,10 @@ class StorageHelper(private val context: Context) {
         get() = getInt(R.string.pref_lastindex)
         set(i) = setInt(R.string.pref_lastindex, i)
 
+    var pageSelectionCount
+        get() = getInt(R.string.pref_pageSelectionCount)
+        set(i) = setInt(R.string.pref_pageSelectionCount, i)
+
     var fabLongPressCount
         get() = getInt(R.string.pref_fabLongPressCount)
         set(i) = setInt(R.string.pref_fabLongPressCount, i)

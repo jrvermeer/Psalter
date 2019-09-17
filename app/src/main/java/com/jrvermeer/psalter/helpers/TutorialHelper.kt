@@ -3,6 +3,7 @@ package com.jrvermeer.psalter.helpers
 import android.app.Activity
 import androidx.annotation.StringRes
 import android.view.View
+import androidx.appcompat.widget.Toolbar
 
 import com.getkeepsafe.taptargetview.TapTarget
 import com.getkeepsafe.taptargetview.TapTargetSequence
@@ -23,19 +24,25 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
                 .considerOuterCircleCanceled(true)
     }
 
-    @JvmOverloads
-    fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int, tint: Boolean = true) {
+    private fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int, tint: Boolean = true) {
         val shown = storage.getBoolean(prefTutorialShown)
         if (!shown && view != null) {
             if (targetSequence == null) targetSequence = getTargetSequence()
-            targetSequence!!.target(TapTarget.forView(view,
-                    context.getString(title),
-                    context.getString(description))
+            targetSequence!!.target(getTapTarget(view, title, description)
                     .tintTarget(tint)
                     .textColor(android.R.color.white))
 
             targetSequence!!.start()
             storage.setBoolean(prefTutorialShown, true)
+        }
+    }
+
+    private fun getTapTarget(view: View?, @StringRes rTitle: Int, @StringRes rDescription: Int): TapTarget {
+        val title = context.getString(rTitle)
+        val description = context.getString(rDescription)
+        return when(view){
+            is Toolbar -> TapTarget.forToolbarOverflow(view, title, description)
+            else -> TapTarget.forView(view, title, description)
         }
     }
 
@@ -65,6 +72,13 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
                 R.string.pref_tutorialshown_showscore,
                 R.string.tutorial_showscore_title,
                 R.string.tutorial_showscore_description, false)
+    }
+
+    fun showOfflineTutorial(toolbar: Toolbar){
+        showTutorial(toolbar,
+                R.string.pref_tutorialShown_toolbarOverflow,
+                R.string.tutorial_toolbarOverflow_title,
+                R.string.tutorial_toolbarOverflow_description)
     }
 
     override fun onSequenceFinish() {
