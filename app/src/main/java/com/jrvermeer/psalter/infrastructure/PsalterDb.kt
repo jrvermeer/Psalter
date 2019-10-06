@@ -5,6 +5,9 @@ import android.database.Cursor
 import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteQueryBuilder
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.helpers.DownloadHelper
 import com.jrvermeer.psalter.models.Psalter
@@ -19,7 +22,7 @@ import java.util.*
  */
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 class PsalterDb(private val context: Context,
-                private val scope: CoroutineScope) : SQLiteAssetHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+                private val scope: CoroutineScope) : SQLiteAssetHelper(context, DATABASE_NAME, null, DATABASE_VERSION), LifecycleObserver {
 
     val downloader = DownloadHelper(context)
     private val db: SQLiteDatabase
@@ -35,6 +38,12 @@ class PsalterDb(private val context: Context,
         private const val DATABASE_VERSION = 29
         private const val DATABASE_NAME = "psalter.sqlite"
         private const val TABLE_NAME = "psalter"
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy() {
+        Logger.d("OnDestroy - PsalterDb")
+        db.close()
     }
 
     fun getCount(): Int {

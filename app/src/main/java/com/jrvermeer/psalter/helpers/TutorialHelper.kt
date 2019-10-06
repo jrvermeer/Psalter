@@ -30,6 +30,7 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
             if (targetSequence == null) targetSequence = getTargetSequence()
             targetSequence!!.target(getTapTarget(view, title, description)
                     .tintTarget(tint)
+                    .outerCircleColor(R.color.colorAccent)
                     .textColor(android.R.color.white))
 
             targetSequence!!.start()

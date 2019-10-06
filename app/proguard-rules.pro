@@ -8,10 +8,10 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
--keep class android.support.v7.widget.SearchView { *; }
--keep class android.support.v7.widget.Toolbar { *** mMenuView; }
--keep class android.support.v7.widget.ActionMenuView { *** mPresenter; }
--keep class android.support.v7.widget.ActionMenuPresenter { *** mOverflowButton; }
+#-keep class androidx.appcompat.widget.SearchView { *; }
+-keep class androidx.appcompat.widget.Toolbar { *** mMenuView; }
+-keep class androidx.appcompat.widget.ActionMenuView { *** mPresenter; }
+-keep class androidx.appcompat.widget.ActionMenuPresenter { *** mOverflowButton; }
 
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}

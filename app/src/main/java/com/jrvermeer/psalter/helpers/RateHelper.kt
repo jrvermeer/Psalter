@@ -8,9 +8,9 @@ import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.infrastructure.Logger
 import java.util.concurrent.TimeUnit
 
-class DialogHelper(private val context: Context,
-                   private val storage: StorageHelper,
-                   private val sendMessage: (String) -> Unit) {
+class RateHelper(private val context: Context,
+                 private val storage: StorageHelper,
+                 private val sendMessage: (String) -> Unit) {
 
     fun showRateDialogIfAppropriate() {
         if (!shouldShowDialog()) return

@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -21,6 +20,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleService
 import androidx.media.app.NotificationCompat.MediaStyle
 
 import com.jrvermeer.psalter.models.Psalter
@@ -28,7 +28,6 @@ import com.jrvermeer.psalter.ui.MainActivity
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.helpers.AudioHelper
 import com.jrvermeer.psalter.helpers.StorageHelper
-import com.jrvermeer.psalter.models.MessageLength
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -37,7 +36,7 @@ import kotlinx.coroutines.sync.withLock
  * Created by Jonathan on 4/3/2017.
  */
 
-class MediaService : Service(), CoroutineScope by MainScope() {
+class MediaService : LifecycleService(), CoroutineScope by MainScope() {
     companion object {
         private const val MS_BETWEEN_VERSES = 700
         private const val NOTIFICATION_ID = 1234
@@ -64,8 +63,10 @@ class MediaService : Service(), CoroutineScope by MainScope() {
     private var currentVerse = 1
 
     override fun onCreate() {
+        super.onCreate()
         Logger.d("MediaService created")
         psalterDb = PsalterDb(this, this)
+        lifecycle.addObserver(psalterDb)
         notificationManager = NotificationManagerCompat.from(this)
         createNotificationChannel()
         mediaPlayer.setOnCompletionListener { this@MediaService.mediaPlayerCompleted() }
@@ -83,7 +84,8 @@ class MediaService : Service(), CoroutineScope by MainScope() {
         registerReceiver(audioHelper.becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         Logger.d("MediaService started (${intent?.action})")
         when(intent?.action) {
             ACTION_DELETE -> stopSelf()
@@ -98,6 +100,7 @@ class MediaService : Service(), CoroutineScope by MainScope() {
     }
 
     override fun onDestroy() {
+        super.onDestroy()
         Logger.d("MediaService destroyed")
         mediaPlayer.release()
         mediaSession.release()
@@ -205,6 +208,7 @@ class MediaService : Service(), CoroutineScope by MainScope() {
     }
 
     override fun onBind(intent: Intent): IBinder? {
+        super.onBind(intent)
         return binder
     }
 
@@ -262,15 +266,15 @@ class MediaService : Service(), CoroutineScope by MainScope() {
     }
 
     private fun updateMetaData(psalter: Psalter) {
-        val title = psalter.title + " - " + psalter.heading
+        val title = psalter.title + " - Verse $currentVerse of ${psalter.numverses}"
         val builder = MediaMetadataCompat.Builder()
                 .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, psalter.id.toString())
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, psalter.subtitleText)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "The Psalter")
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, psalter.subtitleText)
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, "Verse $currentVerse of ${psalter.numverses}")
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, psalter.biblePassage)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, psalter.biblePassage)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, psalter.heading)
+                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, psalter.heading)
         if(psalter.score != null) builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, psalter.score?.bitmap)
 
         mediaSession.setMetadata(builder.build())

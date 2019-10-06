@@ -28,8 +28,8 @@ class PsalterPagerAdapter(private val context: Context,
 
     private val views = ConcurrentHashMap<Int, View>()
 
-    fun getView(i: Int): View {
-        return views[i]!!
+    fun getView(i: Int): View? {
+        return views[i]
     }
 
     override fun instantiateItem(collection: ViewGroup, position: Int): Any {
@@ -42,7 +42,7 @@ class PsalterPagerAdapter(private val context: Context,
             scope.launch { setScoreAndLyrics(psalter, layout) }
 
             layout.tvPagerHeading.text = psalter.heading
-            layout.tvPagerPsalm.text = HtmlCompat.fromHtml(psalter.subtitleLink, HtmlCompat.FROM_HTML_MODE_LEGACY)
+            layout.tvPagerPsalm.text = HtmlCompat.fromHtml(psalter.bibleLink, HtmlCompat.FROM_HTML_MODE_LEGACY)
             layout.tvPagerPsalm.movementMethod = LinkMovementMethod.getInstance()
 
             views[position] = layout
@@ -81,12 +81,11 @@ class PsalterPagerAdapter(private val context: Context,
         var text = psalter.lyrics
         if (showScore) {
             layout.scoreProgress.show()
-            // load score blocking: we need it now
             val score = psalter.loadScore(psalterDb.downloader)
+            layout.scoreProgress.hide()
             if (score != null) {
                 if (nightMode) score.invertColors()
                 layout.imgScore.setImageDrawable(score)
-                layout.scoreProgress.hide()
 
                 val lyricStartIndex = psalter.lyrics.indexOf((psalter.numVersesInsideStaff + 1).toString() + ". ")
                 text = if (lyricStartIndex < 0) "" else psalter.lyrics.substring(lyricStartIndex)

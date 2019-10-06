@@ -9,13 +9,9 @@ import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.infrastructure.Logger
 import com.jrvermeer.psalter.infrastructure.PsalterDb
 import com.jrvermeer.psalter.models.Psalter
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.io.*
 import java.net.URL
-
 
 class DownloadHelper(private val context: Context) {
     val saveDir: File =
@@ -27,16 +23,17 @@ class DownloadHelper(private val context: Context) {
     suspend fun downloadFile(path: String): File? = withContext(Dispatchers.IO) {
         val file = File(saveDir, path)
         val temp = File.createTempFile("prefix", "suffix")
+
+        var urlStream: InputStream? = null
         var input: BufferedInputStream? = null
         var output: FileOutputStream? = null
         try {
             val url = URL(baseUrl + path)
-            val connection = url.openConnection()
-            connection.connect()
             Logger.d("Downloading $path")
 
             // download the file
-            input = BufferedInputStream(url.openStream(), 8192)
+            urlStream = url.openStream()
+            input = BufferedInputStream(urlStream, 8192)
             output = FileOutputStream(temp.path)
             val data = ByteArray(1024)
             var count: Int
@@ -57,6 +54,7 @@ class DownloadHelper(private val context: Context) {
             return@withContext null
         } finally {
             if (temp.exists()) temp.delete()
+            urlStream?.close()
             output?.close()
             input?.close()
         }

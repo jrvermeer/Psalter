@@ -14,5 +14,6 @@ enum class LogEvent {
     SearchPsalm,
     SearchLyrics,
     SkipToNext,
-    Feedback
+    Feedback,
+    EnableOffline
 }

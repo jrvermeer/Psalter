@@ -31,11 +31,13 @@ import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import androidx.lifecycle.LifecycleOwner
 
-class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
+
+class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), LifecycleOwner {
 
     private lateinit var storage: StorageHelper
-    private lateinit var dialog: DialogHelper
+    private lateinit var rateHelper: RateHelper
     private lateinit var instant: InstantHelper
     private lateinit var psalterDb: PsalterDb
     private lateinit var tutorials: TutorialHelper
@@ -47,10 +49,24 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         storage = StorageHelper(this)
-        dialog = DialogHelper(this, storage) { msg -> snack(msg) }
+        rateHelper = RateHelper(this, storage) { msg -> snack(msg) }
         tutorials = TutorialHelper(this)
         instant = InstantHelper(this)
         psalterDb = PsalterDb(this, this)
+
+        // https://stackoverflow.com/a/28155638
+//        if (BuildConfig.DEBUG) {
+//            StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder()
+//                    .detectLeakedSqlLiteObjects()
+//                    .detectLeakedClosableObjects()
+//                    .detectLeakedRegistrationObjects()
+//                    .detectActivityLeaks()
+//                    .penaltyLog()
+//                    .penaltyDeath()
+//                    .build())
+//        }
+
+        lifecycle.addObserver(psalterDb)
 
         // must be done before super(), or onCreate() will be called twice and tutorials won't work
         AppCompatDelegate.setDefaultNightMode(if(storage.nightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
@@ -114,8 +130,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     private fun queueDownloads(){
         snack("Check notification for progress.")
         launch {
-            psalterDb.downloader.queueAllDownloads(psalterDb)
             storage.allMediaDownloaded = true
+            psalterDb.downloader.queueAllDownloads(psalterDb)
+            Logger.event(LogEvent.EnableOffline)
         }
     }
 
@@ -205,7 +222,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             val psalter = selectedPsalter
             mediaService?.play(psalter!!, false)
             mediaService?.startService(this)
-            dialog.showRateDialogIfAppropriate()
+            rateHelper.showRateDialogIfAppropriate()
         }
     }
 

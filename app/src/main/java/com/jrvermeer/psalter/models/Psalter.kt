@@ -23,8 +23,8 @@ data class Psalter (
         var scorePath: String = ""
 ) {
     private val passage get() = if (psalm == 0) "Matthew+6:9-13" else "Psalm+$psalm"
-    val subtitleText get() = if (psalm == 0) "Lords Prayer" else "Psalm $psalm"
-    val subtitleLink get() = "<a href=https://www.biblegateway.com/passage?search=$passage>$subtitleText</a>"
+    val biblePassage get() = if (psalm == 0) "Lords Prayer" else "Psalm $psalm"
+    val bibleLink get() = "<a href=https://www.biblegateway.com/passage?search=$passage>$biblePassage</a>"
 
     private var _audio: Uri? = null
     val audio get() = _audio
