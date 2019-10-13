@@ -27,6 +27,7 @@ import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.ui.MainActivity
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.helpers.AudioHelper
+import com.jrvermeer.psalter.helpers.DownloadHelper
 import com.jrvermeer.psalter.helpers.StorageHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -51,12 +52,13 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
         const val ACTION_DELETE = "ACTION_DELETE"
     }
 
-    private lateinit var binder: MediaServiceBinder
     private lateinit var audioHelper: AudioHelper
+    private lateinit var storage: StorageHelper
+    private lateinit var downloader: DownloadHelper
+    private lateinit var binder: MediaServiceBinder
     private lateinit var psalterDb: PsalterDb
     private lateinit var notificationManager: NotificationManagerCompat
     private lateinit var mediaSession: MediaSessionCompat
-    private lateinit var storage: StorageHelper
     private val mutex = Mutex()
     private val mediaPlayer = MediaPlayer()
     private var psalter: Psalter? = null
@@ -65,20 +67,19 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
     override fun onCreate() {
         super.onCreate()
         Logger.d("MediaService created")
-        psalterDb = PsalterDb(this, this)
-        lifecycle.addObserver(psalterDb)
-        notificationManager = NotificationManagerCompat.from(this)
-        createNotificationChannel()
-        mediaPlayer.setOnCompletionListener { this@MediaService.mediaPlayerCompleted() }
-        mediaPlayer.setOnErrorListener { mp, what, extra -> this@MediaService.mediaPlayerError(mp, what, extra) }
-
         mediaSession = MediaSessionCompat(this, "MediaService")
         mediaSession.setCallback(mMediaSessionCallback)
 
         binder = MediaServiceBinder(mediaSession)
         audioHelper = AudioHelper(this, binder, mediaPlayer)
-
         storage = StorageHelper(this)
+        downloader = DownloadHelper(this, storage)
+        psalterDb = PsalterDb(this, this, downloader)
+        lifecycle.addObserver(psalterDb)
+        notificationManager = NotificationManagerCompat.from(this)
+        createNotificationChannel()
+        mediaPlayer.setOnCompletionListener { this@MediaService.mediaPlayerCompleted() }
+        mediaPlayer.setOnErrorListener { mp, what, extra -> this@MediaService.mediaPlayerError(mp, what, extra) }
 
         updatePlaybackState(PlaybackStateCompat.STATE_NONE)
         registerReceiver(audioHelper.becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
@@ -217,8 +218,8 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
         mediaPlayer.reset() // stop audio, we're going to a different page
         currentVerse = 1
         updateMetaData(psalter)
-        val audioUri = psalter.loadAudio(psalterDb.downloader) ?: return false
-        psalter.loadScore(psalterDb.downloader)
+        val audioUri = psalter.loadAudio(downloader) ?: return false
+        psalter.loadScore(downloader)
         this.psalter = psalter
         mutex.withLock { // cya: multiple coroutines could be trying to set datasource at the same time here, and who knows what state mediaPlayer is in after suspending
             mediaPlayer.reset()

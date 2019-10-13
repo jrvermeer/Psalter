@@ -30,7 +30,6 @@ import com.jrvermeer.psalter.helpers.*
 import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
 import androidx.lifecycle.LifecycleOwner
 
 
@@ -43,16 +42,18 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     private lateinit var tutorials: TutorialHelper
     private lateinit var searchMenuItem: MenuItem
     private lateinit var searchView: SearchView
+    private lateinit var downloader: DownloadHelper
     private var mediaService: MediaServiceBinder? = null
 
     private val selectedPsalter get() = psalterDb.getIndex(viewPager.currentItem)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         storage = StorageHelper(this)
+        downloader = DownloadHelper(this, storage)
         rateHelper = RateHelper(this, storage) { msg -> snack(msg) }
         tutorials = TutorialHelper(this)
         instant = InstantHelper(this)
-        psalterDb = PsalterDb(this, this)
+        psalterDb = PsalterDb(this, this, downloader)
 
         // https://stackoverflow.com/a/28155638
 //        if (BuildConfig.DEBUG) {
@@ -76,7 +77,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         initViews()
 
         storage.launchCount++
-        instant.transferInstantAppData()
+        // instant.transferInstantAppData() doesn't work anyways
 
         tutorials.showOfflineTutorial(toolbar as Toolbar)
         tutorials.showScoreTutorial(fabToggleScore)
@@ -128,12 +129,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     }
 
     private fun queueDownloads(){
-        snack("Check notification for progress.")
-        launch {
-            storage.allMediaDownloaded = true
-            psalterDb.downloader.queueAllDownloads(psalterDb)
-            Logger.event(LogEvent.EnableOffline)
-        }
+        downloader.offlinePrompt(psalterDb, this) { msg -> snack(msg) }
     }
 
     private fun goToRandom() {
@@ -331,7 +327,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         searchBtn_Lyrics.setOnClickListener { searchMode = SearchMode.Lyrics }
         searchBtn_Psalter.setOnClickListener { searchMode = SearchMode.Psalter }
 
-        val viewPagerAdapter = PsalterPagerAdapter(this, this, psalterDb, storage.scoreShown, storage.nightMode)
+        val viewPagerAdapter = PsalterPagerAdapter(this, this, psalterDb, downloader, storage.scoreShown, storage.nightMode)
         viewPager.adapter = viewPagerAdapter
         viewPager.currentItem = storage.pageIndex
         viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {

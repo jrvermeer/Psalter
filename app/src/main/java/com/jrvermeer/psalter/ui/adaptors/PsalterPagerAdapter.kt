@@ -11,6 +11,7 @@ import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.infrastructure.Logger
 import com.jrvermeer.psalter.infrastructure.PsalterDb
 import com.jrvermeer.psalter.*
+import com.jrvermeer.psalter.helpers.DownloadHelper
 import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 class PsalterPagerAdapter(private val context: Context,
                           private val scope: CoroutineScope,
                           private val psalterDb: PsalterDb,
+                          private val downloader: DownloadHelper,
                           private var showScore: Boolean,
                           private val nightMode: Boolean) : androidx.viewpager.widget.PagerAdapter() {
 
@@ -77,11 +79,11 @@ class PsalterPagerAdapter(private val context: Context,
 
     private suspend fun setScoreAndLyrics(psalter: Psalter, layout: View) {
         // load audio in bg. viewpager never needs audio, but user could request it at tap of a button
-        scope.launch { psalter.loadAudio(psalterDb.downloader) }
+        scope.launch { psalter.loadAudio(downloader) }
         var text = psalter.lyrics
         if (showScore) {
             layout.scoreProgress.show()
-            val score = psalter.loadScore(psalterDb.downloader)
+            val score = psalter.loadScore(downloader)
             layout.scoreProgress.hide()
             if (score != null) {
                 if (nightMode) score.invertColors()
@@ -94,7 +96,7 @@ class PsalterPagerAdapter(private val context: Context,
         else {
             layout.imgScore.setImageDrawable(null)
             // load score in bg. viewpager doesn't need it *now*, but could at the tap of a button
-            scope.launch { psalter.loadScore(psalterDb.downloader) }
+            scope.launch { psalter.loadScore(downloader) }
         }
         layout.tvPagerLyrics.text = text
     }

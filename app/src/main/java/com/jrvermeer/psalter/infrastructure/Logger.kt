@@ -42,8 +42,8 @@ object Logger {
     }
 
     fun playbackStarted(numberTitle: String, shuffling: Boolean) {
-        val params = mapOf("Number" to numberTitle)
-        event(if (shuffling) LogEvent.ShufflePsalter else LogEvent.PlayPsalter, params)
+        val params = mapOf("Number" to numberTitle, "Shuffling" to shuffling.toString())
+        event(LogEvent.PlayPsalter, params)
     }
 
     fun skipToNext(skippedPsalter: Psalter?){

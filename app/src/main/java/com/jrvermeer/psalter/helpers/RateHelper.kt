@@ -18,13 +18,13 @@ class RateHelper(private val context: Context,
         storage.setLong(R.string.pref_lastRatePromptShownTime, System.currentTimeMillis())
 
         AlertDialog.Builder(context).run {
+            setIcon(R.mipmap.ic_launcher)
             setTitle("Are you enjoying the Psalter?")
             // Can't set handlers here, they need a reference to the dialog.
             // But we have to set buttons, bc we can't add them once built. We can only change them.
             setPositiveButton("Yes!", null)
             setNegativeButton("Could be better", null)
             setNeutralButton("Meh", null) // have to create it here, can't add new button once created
-            setIcon(R.mipmap.ic_launcher)
             setCancelable(false)
             create()
         }.run {

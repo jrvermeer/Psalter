@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Psalter</string>
-    <string name="mediaBaseUrl">https://github.com/jrvermeer/PsalterFiles/raw/master/</string>
+    <!--<string name="mediaBaseUrl">https://github.com/jrvermeer/PsalterFiles/raw/master/</string>-->
 
     <string name="action_nightMode">Night Mode</string>
     <string name="action_random">Random</string>

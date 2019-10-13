@@ -12,6 +12,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 
 import com.jrvermeer.psalter.models.Psalter
@@ -34,7 +35,7 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
 
     fun queryPsalter(searchQuery: String) {
         query = getFilteredQuery(searchQuery.toLowerCase())
-        showResults(psalterDb.searchPsalter(query!!))
+        showResults(psalterDb.searchPsalter(query))
         psalmSearch = false
     }
 
@@ -83,13 +84,13 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
                 }
                 // highlight all instances of query
                 val filterText = viewText.toString().toLowerCase()
-                var iHighlightStart = filterText.indexOf(query!!)
+                var iHighlightStart = filterText.indexOf(query)
                 while (iHighlightStart >= 0) {
-                    val iHighlightEnd = iHighlightStart + query!!.length
+                    val iHighlightEnd = iHighlightStart + query.length
                     viewText.setSpan(StyleSpan(Typeface.BOLD), iHighlightStart, iHighlightEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
 //                    viewText.setSpan(AbsoluteSizeSpan((holder.tvLyrics!!.textSize * 1.5).toInt()), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     viewText.setSpan(ForegroundColorSpan(ContextCompat.getColor(context, R.color.colorAccent)), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    iHighlightStart = filterText.indexOf(query!!, iHighlightStart + 1)
+                    iHighlightStart = filterText.indexOf(query, iHighlightStart + 1)
                 }
 
                 holder.tvLyrics!!.text = viewText
@@ -127,7 +128,7 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
     }
 
     class ViewHolder(view: View) {
-        var tvNumber = view.tvSearchNumber
-        var tvLyrics = view.tvSearchLyrics
+        var tvNumber: TextView = view.tvSearchNumber
+        var tvLyrics: TextView = view.tvSearchLyrics
     }
 }

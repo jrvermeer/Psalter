@@ -1,5 +1,6 @@
 package com.jrvermeer.psalter.helpers
 
+import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Context.DOWNLOAD_SERVICE
@@ -8,12 +9,13 @@ import android.os.Build
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.infrastructure.Logger
 import com.jrvermeer.psalter.infrastructure.PsalterDb
+import com.jrvermeer.psalter.models.LogEvent
 import com.jrvermeer.psalter.models.Psalter
 import kotlinx.coroutines.*
 import java.io.*
 import java.net.URL
 
-class DownloadHelper(private val context: Context) {
+class DownloadHelper(private val context: Context, private val storage: StorageHelper) {
     val saveDir: File =
             if (Build.VERSION.SDK_INT >= 26 && context.packageManager.isInstantApp)
                 context.filesDir
@@ -60,9 +62,27 @@ class DownloadHelper(private val context: Context) {
         }
     }
 
-    suspend fun queueAllDownloads(psalterDb: PsalterDb) = withContext(Dispatchers.Default) {
+    fun offlinePrompt(psalterDb: PsalterDb, scope: CoroutineScope, sendMessage: (String) -> Unit) {
+        AlertDialog.Builder(context).run {
+            setIcon(R.mipmap.ic_launcher)
+            setTitle("Enable offline?")
+            setMessage("This will download a lot of  music files, and may take a minute or so")
+            setPositiveButton("Ok") { dialog,_ ->
+                scope.launch { queueAllDownloads(psalterDb) }
+                sendMessage("Check notification for progress")
+                dialog.dismiss()
+            }
+            setNegativeButton("Not right now") { dialog, _ ->
+                dialog.dismiss()
+            }
+        }.show()
+    }
+
+    private suspend fun queueAllDownloads(psalterDb: PsalterDb) = withContext(Dispatchers.Default) {
         val dlManager = context.getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         for (i in 0 until psalterDb.getCount()) {
+            if(!isActive) return@withContext // if no longer active, queries will fail and crash app
+
             val psalter = psalterDb.getIndex(i)!!
             val audio = File(saveDir, psalter.audioPath)
             val score = File(saveDir, psalter.scorePath)
@@ -75,6 +95,8 @@ class DownloadHelper(private val context: Context) {
                 dlManager.enqueue(getDownloadRequest(psalter, PsalterMedia.Score))
             }
         }
+        storage.allMediaDownloaded = true
+        Logger.event(LogEvent.EnableOffline)
     }
 
     private fun getDownloadRequest(psalter: Psalter, media: PsalterMedia): DownloadManager.Request {

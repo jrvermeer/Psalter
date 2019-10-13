@@ -52,17 +52,17 @@
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalter"
                     android:text="Psalter #"
-                    android:textColor="@color/button" />
+                    android:theme="@style/ToggleButton"/>
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Lyrics"
                     android:text="Lyrics"
-                    android:textColor="@color/button" />
+                    android:theme="@style/ToggleButton" />
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/searchBtn_Psalm"
                     android:text="Psalm #"
-                    android:textColor="@color/button" />
+                    android:theme="@style/ToggleButton" />
             </TableRow>
         </TableLayout>
     </LinearLayout>
