@@ -31,6 +31,7 @@ import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.cancel
 
 
 class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), LifecycleOwner {
@@ -94,6 +95,11 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         mediaService?.unregisterCallbacks()
         unbindService(mConnection)
         super.onStop()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cancel()
     }
     override fun onBackPressed() {
         if (lvSearchResults.isShown) {
