@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INSTANT_APP_FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- shouldn't need to declare this, but lollipop seems to need it again sometimes?  -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="21" />
 
     <application
         android:allowBackup="true"

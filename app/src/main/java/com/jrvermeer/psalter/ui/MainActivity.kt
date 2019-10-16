@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         storage.launchCount++
         // instant.transferInstantAppData() doesn't work anyways
 
-        tutorials.showOfflineTutorial(toolbar as Toolbar)
+        if(!instant.isInstantApp) tutorials.showOfflineTutorial(toolbar as Toolbar)
         tutorials.showScoreTutorial(fabToggleScore)
         tutorials.showShuffleTutorial(fab)
     }

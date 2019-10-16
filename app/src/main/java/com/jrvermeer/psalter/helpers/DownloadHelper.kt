@@ -66,7 +66,7 @@ class DownloadHelper(private val context: Context, private val storage: StorageH
         AlertDialog.Builder(context).run {
             setIcon(R.mipmap.ic_launcher)
             setTitle("Enable offline?")
-            setMessage("This will download a lot of  music files, and may take a minute or so")
+            setMessage("This will download a lot of music files, and may take a minute or so")
             setPositiveButton("Ok") { dialog,_ ->
                 scope.launch { queueAllDownloads(psalterDb) }
                 sendMessage("Check notification for progress")
