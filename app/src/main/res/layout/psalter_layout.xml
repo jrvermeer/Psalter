@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView android:layout_height="match_parent" android:layout_width="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android">
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <LinearLayout
             android:orientation="vertical" android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="140dp"
@@ -14,7 +14,7 @@
                 android:id="@+id/tvPagerHeading"
                 android:gravity="center_horizontal"
                 android:textSize="18sp"
-                android:textStyle="bold|italic"/>
+                android:textStyle="italic" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -22,7 +22,7 @@
                 android:id="@+id/tvPagerPsalm"
                 android:gravity="center_horizontal"
                 android:textSize="18sp"
-                android:textColorLink="@color/colorAccent"/>
+                android:textColorLink="@color/colorAccent" />
 
             <ProgressBar
                 android:id="@+id/scoreProgress"
@@ -31,7 +31,7 @@
                 android:paddingTop="50dp"
                 android:paddingBottom="50dp"
                 android:layout_gravity="center"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:layout_width="match_parent"
@@ -39,7 +39,7 @@
                 android:id="@+id/imgScore"
                 android:scaleType="fitXY"
                 android:adjustViewBounds="true"
-                android:paddingBottom="10dp"/>
+                android:paddingBottom="10dp" />
 
             <TextView
                 android:id="@+id/tvPagerLyrics"
@@ -47,8 +47,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_horizontal"
                 android:textSize="16sp"
-                android:textIsSelectable="true"/>
-
+                android:textIsSelectable="true" />
 
         </LinearLayout>
 </ScrollView>

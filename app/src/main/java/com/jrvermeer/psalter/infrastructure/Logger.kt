@@ -71,14 +71,27 @@ object Logger {
             SearchMode.Psalm -> searchPsalm(query.toInt(), psalterChosen)
         }
     }
+    fun feedbackCancelled(enjoying: Boolean? = null){
+        val params = mapOf("Enjoying" to getFeedbackEnjoyingResponse(enjoying))
+        event(LogEvent.Feedback, params)
+    }
     fun feedback(enjoying: Boolean, doSomethingAboutIt: Boolean?){
+        val action1 = getFeedbackEnjoyingResponse(enjoying)
+        val param2 = if(enjoying) "Rate" else "SuggestImprovements"
         val action2: String = when (doSomethingAboutIt){
             null -> "AlreadyDid"
             true -> "Yes"
             false -> "MaybeLater"
         }
-        val params = mutableMapOf("Enjoying" to enjoying.toString(), "doSomethingAboutIt" to action2)
+        val params = mutableMapOf("Enjoying" to action1, param2 to action2)
         event(LogEvent.Feedback, params)
+    }
+    private fun getFeedbackEnjoyingResponse(enjoying: Boolean?): String {
+        return when(enjoying) {
+            null -> "Cancelled"
+            true -> "Yes!"
+            false -> "Could be better"
+        }
     }
 
     fun event(event: LogEvent, params: Map<String, String>? = null) {

@@ -12,10 +12,13 @@ class RateHelper(private val context: Context,
                  private val storage: StorageHelper,
                  private val sendMessage: (String) -> Unit) {
 
+    private var enjoying: Boolean? = null
+
     fun showRateDialogIfAppropriate() {
         if (!shouldShowDialog()) return
         storage.ratePromptCount++
-        storage.setLong(R.string.pref_lastRatePromptShownTime, System.currentTimeMillis())
+
+        resetRatePromptRequirements()
 
         AlertDialog.Builder(context).run {
             setIcon(R.mipmap.ic_launcher)
@@ -25,7 +28,7 @@ class RateHelper(private val context: Context,
             setPositiveButton("Yes!", null)
             setNegativeButton("Could be better", null)
             setNeutralButton("Meh", null) // have to create it here, can't add new button once created
-            setCancelable(false)
+            setOnCancelListener { Logger.feedbackCancelled(enjoying) }
             create()
         }.run {
             // have to override this so it doesn't close when a button is clicked
@@ -43,8 +46,9 @@ class RateHelper(private val context: Context,
     }
 
     private fun userIsEnjoying(dialog: AlertDialog) {
+        enjoying = true
         dialog.run {
-            setTitle("Would you mind leaving a review?")
+            setTitle("Awesome! Would you mind leaving a rating or review?")
             getButton(DialogInterface.BUTTON_POSITIVE).run {
                 text = "Ok"
                 setOnClickListener {
@@ -58,7 +62,6 @@ class RateHelper(private val context: Context,
                 text = "Maybe later"
                 setOnClickListener {
                     dismiss()
-                    resetRatePromptRequirements()
                     Logger.feedback(true, false)
                 }
             }
@@ -76,6 +79,7 @@ class RateHelper(private val context: Context,
     }
 
     private fun userNotEnjoying(dialog: AlertDialog) {
+        enjoying = false
         dialog.run {
             setTitle("Any suggestions for improvements?")
             getButton(DialogInterface.BUTTON_POSITIVE).run {
@@ -91,7 +95,6 @@ class RateHelper(private val context: Context,
                 text = "Not right now"
                 setOnClickListener {
                     dismiss()
-                    resetRatePromptRequirements()
                     Logger.feedback(false, false)
                 }
             }
@@ -113,6 +116,7 @@ class RateHelper(private val context: Context,
         return daysSinceShown >= daysToWait
     }
     private fun resetRatePromptRequirements(){
+        storage.setLong(R.string.pref_lastRatePromptShownTime, System.currentTimeMillis())
         storage.launchCount = 0
         storage.playCount = 0
     }

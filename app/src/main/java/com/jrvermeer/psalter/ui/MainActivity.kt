@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     private val selectedPsalter get() = psalterDb.getIndex(viewPager.currentItem)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Logger.init(this)
         storage = StorageHelper(this)
         downloader = DownloadHelper(this, storage)
         rateHelper = RateHelper(this, storage) { msg -> snack(msg) }
@@ -56,24 +57,11 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         instant = InstantHelper(this)
         psalterDb = PsalterDb(this, this, downloader)
 
-        // https://stackoverflow.com/a/28155638
-//        if (BuildConfig.DEBUG) {
-//            StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder()
-//                    .detectLeakedSqlLiteObjects()
-//                    .detectLeakedClosableObjects()
-//                    .detectLeakedRegistrationObjects()
-//                    .detectActivityLeaks()
-//                    .penaltyLog()
-//                    .penaltyDeath()
-//                    .build())
-//        }
-
         lifecycle.addObserver(psalterDb)
 
         // must be done before super(), or onCreate() will be called twice and tutorials won't work
         AppCompatDelegate.setDefaultNightMode(if(storage.nightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
         super.onCreate(savedInstanceState)
-        Logger.init(this)
         setContentView(R.layout.activity_main)
         initViews()
 

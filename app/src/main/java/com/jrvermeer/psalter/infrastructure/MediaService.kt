@@ -28,6 +28,7 @@ import com.jrvermeer.psalter.ui.MainActivity
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.helpers.AudioHelper
 import com.jrvermeer.psalter.helpers.DownloadHelper
+import com.jrvermeer.psalter.helpers.SafeMediaPlayer
 import com.jrvermeer.psalter.helpers.StorageHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -45,7 +46,6 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
         private const val NOTIFICATION_CHANNEL_NAME = "Playback Notification"
         private const val MAX_RETRY_COUNT = 5
 
-        // MediaButtonReceiver.buildMediaButtonPendingIntent doesn't work for instant apps?
         const val ACTION_SKIP_TO_NEXT = "ACTION_SKIP_TO_NEXT"
         const val ACTION_PLAY = "ACTION_PLAY"
         const val ACTION_STOP = "ACTION_STOP"
@@ -60,7 +60,7 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
     private lateinit var notificationManager: NotificationManagerCompat
     private lateinit var mediaSession: MediaSessionCompat
     private val mutex = Mutex()
-    private val mediaPlayer = MediaPlayer()
+    private val mediaPlayer = SafeMediaPlayer()
     private var psalter: Psalter? = null
     private var currentVerse = 1
 
@@ -251,7 +251,7 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
     }
 
     private fun updatePlaybackState(state: Int) {
-        var actions = PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID or PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH
+        var actions = PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID
         if (binder.isShuffling) actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
         when (state) {
             PlaybackStateCompat.STATE_PAUSED -> actions = (actions

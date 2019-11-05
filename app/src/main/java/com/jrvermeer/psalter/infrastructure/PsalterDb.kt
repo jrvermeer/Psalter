@@ -23,14 +23,13 @@ import java.util.*
 // SQLiteAssetHelper: https://github.com/jgilfelt/android-sqlite-asset-helper
 class PsalterDb(private val context: Context,
                 private val scope: CoroutineScope,
-                private val downloader: DownloadHelper) : SQLiteAssetHelper(context, DATABASE_NAME, null, DATABASE_VERSION), LifecycleObserver {
+                private val downloader: DownloadHelper) : SQLiteAssetHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION), LifecycleObserver {
 
-    private val db: SQLiteDatabase
+    private val db = readableDatabase
     private var nextRandom : Psalter? = null
 
     init {
         setForcedUpgrade(DATABASE_VERSION)
-        db = readableDatabase
         scope.launch { loadNextRandom() }
     }
 
