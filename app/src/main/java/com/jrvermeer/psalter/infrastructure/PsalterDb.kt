@@ -25,11 +25,12 @@ class PsalterDb(private val context: Context,
                 private val scope: CoroutineScope,
                 private val downloader: DownloadHelper) : SQLiteAssetHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION), LifecycleObserver {
 
-    private val db = readableDatabase
+    private val db: SQLiteDatabase
     private var nextRandom : Psalter? = null
 
     init {
         setForcedUpgrade(DATABASE_VERSION)
+        db = readableDatabase // must be AFTER setForcedUpgrade()
         scope.launch { loadNextRandom() }
     }
 
