@@ -342,8 +342,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
             override fun onQueryTextSubmit(query: String?): Boolean {
                 when (searchMode) {
                     SearchMode.Lyrics -> performLyricSearch(query ?: "", true)
-                    SearchMode.Psalm -> performPsalmSearch(query?.toInt() ?: 0)
-                    SearchMode.Psalter -> performPsalterSearch(query?.toInt() ?: 0)
+                    SearchMode.Psalm -> performPsalmSearch(query?.toIntOrNull() ?: 0)
+                    SearchMode.Psalter -> performPsalterSearch(query?.toIntOrNull() ?: 0)
                 }
                 searchView.clearFocus()
                 return true
