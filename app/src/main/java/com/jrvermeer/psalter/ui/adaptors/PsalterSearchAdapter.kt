@@ -49,7 +49,7 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
         addAll(*results)
     }
 
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         var convertView = convertView
         try {
             val holder: ViewHolder
@@ -98,7 +98,7 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
             return convertView
 
         } catch (ex: Exception) {
-            return convertView
+            return convertView!!
         }
 
     }

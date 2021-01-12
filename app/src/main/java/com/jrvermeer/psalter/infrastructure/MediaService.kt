@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
-import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -60,7 +59,7 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
     private lateinit var notificationManager: NotificationManagerCompat
     private lateinit var mediaSession: MediaSessionCompat
     private val mutex = Mutex()
-    private val mediaPlayer = SafeMediaPlayer()
+    private val mediaPlayer: IPlayer = SafeMediaPlayer() // lateinit var initialized in oncreate?
     private var psalter: Psalter? = null
     private var currentVerse = 1
 
@@ -78,14 +77,14 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
         lifecycle.addObserver(psalterDb)
         notificationManager = NotificationManagerCompat.from(this)
         createNotificationChannel()
-        mediaPlayer.setOnCompletionListener { this@MediaService.mediaPlayerCompleted() }
-        mediaPlayer.setOnErrorListener { mp, what, extra -> this@MediaService.mediaPlayerError(mp, what, extra) }
+        mediaPlayer.onComplete { this@MediaService.mediaPlayerCompleted() }
+        mediaPlayer.onError { what, extra -> this@MediaService.mediaPlayerError(what, extra) }
 
         updatePlaybackState(PlaybackStateCompat.STATE_NONE)
         registerReceiver(audioHelper.becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         Logger.d("MediaService started (${intent?.action})")
         when(intent?.action) {
@@ -129,7 +128,7 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
 
         override fun onStop() {
             Logger.d("OnStop")
-            if (mediaPlayer.isPlaying) {
+            if (mediaPlayer.isPlaying()) {
                 mediaPlayer.stop()
             }
             updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
@@ -155,7 +154,7 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
 
         override fun onPause() {
             if (mediaSession.controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING) {
-                if (mediaPlayer.isPlaying) {
+                if (mediaPlayer.isPlaying()) {
                     mediaPlayer.pause()
                 }
                 updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
@@ -225,6 +224,7 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
             mediaPlayer.reset()
             mediaPlayer.setDataSource(this, audioUri)
             mediaPlayer.prepare()
+            // test speed up here
         }
         return true
     }
@@ -323,7 +323,7 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
             return builder.build()
         }
 
-    private fun mediaPlayerError(mediaPlayer: MediaPlayer, what: Int, extra: Int): Boolean {
+    private fun mediaPlayerError(what: Int, extra: Int): Boolean {
         mediaPlayer.reset()
         Logger.e("MediaPlayer error. ($what, $extra)", null)
         return false

@@ -75,7 +75,7 @@ object Logger {
         val params = mapOf("Enjoying" to getFeedbackEnjoyingResponse(enjoying))
         event(LogEvent.Feedback, params)
     }
-    fun feedback(enjoying: Boolean, doSomethingAboutIt: Boolean?){
+    fun feedback(enjoying: Boolean, doSomethingAboutIt: Boolean?, timesShown: Int){
         val action1 = getFeedbackEnjoyingResponse(enjoying)
         val param2 = if(enjoying) "Rate" else "SuggestImprovements"
         val action2: String = when (doSomethingAboutIt){
@@ -83,7 +83,7 @@ object Logger {
             true -> "Yes"
             false -> "MaybeLater"
         }
-        val params = mutableMapOf("Enjoying" to action1, param2 to action2)
+        val params = mutableMapOf("Enjoying" to action1, param2 to action2, "TimesShown" to timesShown.toString())
         event(LogEvent.Feedback, params)
     }
     private fun getFeedbackEnjoyingResponse(enjoying: Boolean?): String {

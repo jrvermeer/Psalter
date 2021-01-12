@@ -9,11 +9,12 @@ import android.os.Build
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
+import com.jrvermeer.psalter.infrastructure.IPlayer
 
 import com.jrvermeer.psalter.infrastructure.Logger
 import com.jrvermeer.psalter.infrastructure.MediaServiceBinder
 
-class AudioHelper(context: Context, private val binder: MediaServiceBinder, private val mediaPlayer: MediaPlayer): AudioManager.OnAudioFocusChangeListener {
+class AudioHelper(context: Context, private val binder: MediaServiceBinder, private val mediaPlayer: IPlayer): AudioManager.OnAudioFocusChangeListener {
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var resumePlaybackOnFocusGain = false
     private val audioFocusRequest = AudioFocusRequestCompat.Builder(AudioManagerCompat.AUDIOFOCUS_GAIN).run {
@@ -65,18 +66,6 @@ class AudioHelper(context: Context, private val binder: MediaServiceBinder, priv
                     binder.pause()
                 }
             }
-        }
-    }
-
-    //ducking is handled by the system in Oreo
-    private fun MediaPlayer.duck(){
-        if (Build.VERSION.SDK_INT < 26) {
-            this.setVolume(0.1f, 0.1f)
-        }
-    }
-    private fun MediaPlayer.unduck(){
-        if (Build.VERSION.SDK_INT < 26) {
-            this.setVolume(1f, 1f)
         }
     }
 }

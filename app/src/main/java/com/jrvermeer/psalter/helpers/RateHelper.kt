@@ -48,21 +48,21 @@ class RateHelper(private val context: Context,
     private fun userIsEnjoying(dialog: AlertDialog) {
         enjoying = true
         dialog.run {
-            setTitle("Awesome! Would you mind leaving a rating or review?")
+            setTitle("Awesome! Would you mind leaving a rating or review on the Play Store?")
             getButton(DialogInterface.BUTTON_POSITIVE).run {
                 text = "Ok"
                 setOnClickListener {
                     dismiss()
                     context.startActivity(IntentHelper.RateIntent)
                     storage.doNotShowRatePrompt = true
-                    Logger.feedback(true, true)
+                    Logger.feedback(true, true, storage.ratePromptCount)
                 }
             }
             getButton(DialogInterface.BUTTON_NEGATIVE).run {
                 text = "Maybe later"
                 setOnClickListener {
                     dismiss()
-                    Logger.feedback(true, false)
+                    Logger.feedback(true, false, storage.ratePromptCount)
                 }
             }
             getButton(DialogInterface.BUTTON_NEUTRAL).run {
@@ -70,9 +70,9 @@ class RateHelper(private val context: Context,
                 visibility = View.VISIBLE
                 setOnClickListener {
                     dismiss()
-                    sendMessage("You. I like you.")
+                    sendMessage("I appreciate it!")
                     storage.doNotShowRatePrompt = true
-                    Logger.feedback(true, null)
+                    Logger.feedback(true, null, storage.ratePromptCount)
                 }
             }
         }
@@ -88,14 +88,14 @@ class RateHelper(private val context: Context,
                     dismiss()
                     context.startActivity(IntentHelper.FeedbackIntent)
                     storage.doNotShowRatePrompt = true
-                    Logger.feedback(false, true)
+                    Logger.feedback(false, true, storage.ratePromptCount)
                 }
             }
             getButton(DialogInterface.BUTTON_NEGATIVE).run {
                 text = "Not right now"
                 setOnClickListener {
                     dismiss()
-                    Logger.feedback(false, false)
+                    Logger.feedback(false, false, storage.ratePromptCount)
                 }
             }
         }

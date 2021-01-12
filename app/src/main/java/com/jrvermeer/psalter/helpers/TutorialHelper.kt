@@ -24,7 +24,7 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
                 .considerOuterCircleCanceled(true)
     }
 
-    private fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int, tint: Boolean = true) {
+    private fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int?, tint: Boolean = true) {
         val shown = storage.getBoolean(prefTutorialShown)
         if (!shown && view != null) {
             if (targetSequence == null) targetSequence = getTargetSequence()
@@ -38,9 +38,9 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
         }
     }
 
-    private fun getTapTarget(view: View?, @StringRes rTitle: Int, @StringRes rDescription: Int): TapTarget {
+    private fun getTapTarget(view: View?, @StringRes rTitle: Int, @StringRes rDescription: Int?): TapTarget {
         val title = context.getString(rTitle)
-        val description = context.getString(rDescription)
+        val description = if (rDescription == null) "" else context.getString(rDescription)
         return when(view){
             is Toolbar -> TapTarget.forToolbarOverflow(view, title, description)
             else -> TapTarget.forView(view, title, description)
@@ -72,14 +72,7 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
         showTutorial(view,
                 R.string.pref_tutorialshown_showscore,
                 R.string.tutorial_showscore_title,
-                R.string.tutorial_showscore_description, false)
-    }
-
-    fun showOfflineTutorial(toolbar: Toolbar){
-        showTutorial(toolbar,
-                R.string.pref_tutorialShown_toolbarOverflow,
-                R.string.tutorial_toolbarOverflow_title,
-                R.string.tutorial_toolbarOverflow_description)
+                null,false)
     }
 
     override fun onSequenceFinish() {

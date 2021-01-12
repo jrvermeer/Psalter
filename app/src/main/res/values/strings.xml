@@ -28,19 +28,14 @@
 
     <string name="pref_tutorialshown_fablongpress">pref_tutorialshown_fablongpress</string>
     <string name="tutorial_fab_title">Press this button to play song</string>
-    <string name="tutorial_fab_description">Press and hold to continue playing random numbers. Makes for fantastic background music!</string>
+    <string name="tutorial_fab_description">Press and hold to continue playing random numbers. Makes great background music!</string>
 
     <string name="pref_tutorialshown_gotopsalm">pref_tutorialshown_gotopsalm</string>
     <string name="tutorial_gotopsalm_title">Click this link to go to Psalm</string>
     <string name="tutorial_gotopsalm_description">The chapter will open in your default browser</string>
 
     <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore_2</string>
-    <string name="tutorial_showscore_title"> New! Updated music score images!</string>
-    <string name="tutorial_showscore_description">This button will toggle them on or off</string>
-
-    <string name="pref_tutorialShown_toolbarOverflow">pref_tutorialShown_toolbarOverflow</string>
-    <string name="tutorial_toolbarOverflow_title">Save your phone\'s storage!</string>
-    <string name="tutorial_toolbarOverflow_description">Music is now downloaded as needed. You can still enable offline listening in here</string>
+    <string name="tutorial_showscore_title"> Press this button to toggle score images on or off</string>
 
     <string-array name="search_ignore_strings">
         <item>\'</item>
