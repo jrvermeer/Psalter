@@ -15,8 +15,6 @@
     <string name="pref_enableOffline">key_enableOffline</string>
     <string name="pref_fabLongPressCount">key_fabLongPressCount</string>
     <string name="pref_launchCount">key_launchCount</string>
-    <string name="pref_playCount">key_playCount</string>
-    <string name="pref_pageSelectionCount">key_pageSelectionCount</string>
     <string name="pref_ratePromptCount">key_ratePromptCount</string>
     <string name="pref_lastRatePromptShownTime">key_lastRateDialogShownTime</string>
     <string name="pref_neverShowRatePromptAgain">key_neverShowRatePromptAgain</string>
@@ -29,10 +27,6 @@
     <string name="pref_tutorialshown_fablongpress">pref_tutorialshown_fablongpress</string>
     <string name="tutorial_fab_title">Press this button to play song</string>
     <string name="tutorial_fab_description">Press and hold to continue playing random numbers. Makes great background music!</string>
-
-    <string name="pref_tutorialshown_gotopsalm">pref_tutorialshown_gotopsalm</string>
-    <string name="tutorial_gotopsalm_title">Click this link to go to Psalm</string>
-    <string name="tutorial_gotopsalm_description">The chapter will open in your default browser</string>
 
     <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore_2</string>
     <string name="tutorial_showscore_title"> Press this button to toggle score images on or off</string>

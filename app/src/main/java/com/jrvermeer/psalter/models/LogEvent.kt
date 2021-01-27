@@ -6,7 +6,6 @@ package com.jrvermeer.psalter.models
 
 enum class LogEvent {
     PlayPsalter,
-    ShufflePsalter,
     GoToRandom,
     ChangeTheme,
     ChangeScore,
@@ -14,6 +13,6 @@ enum class LogEvent {
     SearchPsalm,
     SearchLyrics,
     SkipToNext,
-    Feedback,
+    RateFlow,
     EnableOffline
 }

@@ -1,102 +1,23 @@
 package com.jrvermeer.psalter.helpers
 
-import android.app.AlertDialog
-import android.content.Context
-import android.content.DialogInterface
-import android.view.View
-import com.jrvermeer.psalter.R
+import android.app.Activity
+import com.google.android.play.core.review.ReviewManagerFactory
 import com.jrvermeer.psalter.infrastructure.Logger
 import java.util.concurrent.TimeUnit
 
-class RateHelper(private val context: Context,
-                 private val storage: StorageHelper,
-                 private val sendMessage: (String) -> Unit) {
-
-    private var enjoying: Boolean? = null
+class RateHelper(private val activity: Activity,
+                 private val storage: StorageHelper) {
 
     fun showRateDialogIfAppropriate() {
         if (!shouldShowDialog()) return
-        storage.ratePromptCount++
 
-        resetRatePromptRequirements()
-
-        AlertDialog.Builder(context).run {
-            setIcon(R.mipmap.ic_launcher)
-            setTitle("Are you enjoying the Psalter?")
-            // Can't set handlers here, they need a reference to the dialog.
-            // But we have to set buttons, bc we can't add them once built. We can only change them.
-            setPositiveButton("Yes!", null)
-            setNegativeButton("Could be better", null)
-            setNeutralButton("Meh", null) // have to create it here, can't add new button once created
-            setOnCancelListener { Logger.feedbackCancelled(enjoying) }
-            create()
-        }.run {
-            // have to override this so it doesn't close when a button is clicked
-            setOnShowListener {
-                this.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                    userIsEnjoying(this)
-                }
-                this.getButton(DialogInterface.BUTTON_NEGATIVE).setOnClickListener {
-                    userNotEnjoying(this)
-                }
-                this.getButton(DialogInterface.BUTTON_NEUTRAL).visibility = View.INVISIBLE // Won't show when we want it if we use View.GONE
-            }
-            show()
-        }
-    }
-
-    private fun userIsEnjoying(dialog: AlertDialog) {
-        enjoying = true
-        dialog.run {
-            setTitle("Awesome! Would you mind leaving a rating or review on the Play Store?")
-            getButton(DialogInterface.BUTTON_POSITIVE).run {
-                text = "Ok"
-                setOnClickListener {
-                    dismiss()
-                    context.startActivity(IntentHelper.RateIntent)
-                    storage.doNotShowRatePrompt = true
-                    Logger.feedback(true, true, storage.ratePromptCount)
-                }
-            }
-            getButton(DialogInterface.BUTTON_NEGATIVE).run {
-                text = "Maybe later"
-                setOnClickListener {
-                    dismiss()
-                    Logger.feedback(true, false, storage.ratePromptCount)
-                }
-            }
-            getButton(DialogInterface.BUTTON_NEUTRAL).run {
-                text = "Already did"
-                visibility = View.VISIBLE
-                setOnClickListener {
-                    dismiss()
-                    sendMessage("I appreciate it!")
-                    storage.doNotShowRatePrompt = true
-                    Logger.feedback(true, null, storage.ratePromptCount)
-                }
-            }
-        }
-    }
-
-    private fun userNotEnjoying(dialog: AlertDialog) {
-        enjoying = false
-        dialog.run {
-            setTitle("Any suggestions for improvements?")
-            getButton(DialogInterface.BUTTON_POSITIVE).run {
-                text = "Yes"
-                setOnClickListener {
-                    dismiss()
-                    context.startActivity(IntentHelper.FeedbackIntent)
-                    storage.doNotShowRatePrompt = true
-                    Logger.feedback(false, true, storage.ratePromptCount)
-                }
-            }
-            getButton(DialogInterface.BUTTON_NEGATIVE).run {
-                text = "Not right now"
-                setOnClickListener {
-                    dismiss()
-                    Logger.feedback(false, false, storage.ratePromptCount)
-                }
+        val manager = ReviewManagerFactory.create(activity)
+        val request = manager.requestReviewFlow()
+        request.addOnCompleteListener { request ->
+            if (request.isSuccessful) {
+                val reviewInfo = request.result
+                manager.launchReviewFlow(activity, reviewInfo)
+                showRatePromptAttempted()
             }
         }
     }
@@ -105,19 +26,18 @@ class RateHelper(private val context: Context,
         // if prompt hasn't been shown yet, set it to now for the sake of calculation
         if(storage.lastRatePromptTime <= 0) storage.lastRatePromptTime = System.currentTimeMillis()
 
-        return !storage.doNotShowRatePrompt
-                && storage.launchCount > 10
-                && storage.playCount > 5
+        return storage.launchCount > 5
                 && enoughTimeSinceLastShow()
     }
     private fun enoughTimeSinceLastShow(): Boolean {
         val daysSinceShown = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - storage.lastRatePromptTime)
-        val daysToWait = 5 * storage.ratePromptCount + 2
-        return daysSinceShown >= daysToWait
+        val daysToWait = if (storage.ratePromptCount == 0) 7 else 31
+        return daysSinceShown >= daysToWait // no more than every month
     }
-    private fun resetRatePromptRequirements(){
-        storage.setLong(R.string.pref_lastRatePromptShownTime, System.currentTimeMillis())
-        storage.launchCount = 0
-        storage.playCount = 0
+    private fun showRatePromptAttempted() {
+        storage.ratePromptCount++
+        storage.lastRatePromptTime = System.currentTimeMillis()
+        storage.launchCount = 0 // reset requirements for re-showing
+        Logger.ratePromptAttempt(storage.ratePromptCount)
     }
 }

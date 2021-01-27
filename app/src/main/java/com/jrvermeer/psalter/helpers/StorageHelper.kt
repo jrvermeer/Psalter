@@ -21,10 +21,6 @@ class StorageHelper(private val context: Context) {
         get() = getInt(R.string.pref_lastindex)
         set(i) = setInt(R.string.pref_lastindex, i)
 
-    var pageSelectionCount
-        get() = getInt(R.string.pref_pageSelectionCount)
-        set(i) = setInt(R.string.pref_pageSelectionCount, i)
-
     var fabLongPressCount
         get() = getInt(R.string.pref_fabLongPressCount)
         set(i) = setInt(R.string.pref_fabLongPressCount, i)
@@ -33,10 +29,6 @@ class StorageHelper(private val context: Context) {
         get() = getInt(R.string.pref_launchCount)
         set(i) = setInt(R.string.pref_launchCount, i)
 
-    var playCount
-        get() = getInt(R.string.pref_playCount)
-        set(i) = setInt(R.string.pref_playCount, i)
-
     var lastRatePromptTime
         get() = getLong(R.string.pref_lastRatePromptShownTime)
         set(l) = setLong(R.string.pref_lastRatePromptShownTime, l)
@@ -44,10 +36,6 @@ class StorageHelper(private val context: Context) {
     var ratePromptCount
         get() = getInt(R.string.pref_ratePromptCount)
         set(i) = setInt(R.string.pref_ratePromptCount, i)
-
-    var doNotShowRatePrompt
-        get() = getBoolean(R.string.pref_neverShowRatePromptAgain)
-        set(b) = setBoolean(R.string.pref_neverShowRatePromptAgain, b)
 
     var allMediaDownloaded
         get() = getBoolean(R.string.pref_enableOffline)

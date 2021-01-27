@@ -168,7 +168,6 @@ class MediaService : LifecycleService(), CoroutineScope by MainScope() {
             launch {
                 if(prepareNewPsalter(psalter)) {
                     binder.play()
-                    storage.playCount++
                     if(binder.isShuffling) showShuffleMessage()
                 }
                 else binder.onAudioUnavailable(psalter)

@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
     signingConfigs {
@@ -18,7 +18,7 @@ android {
         minSdkVersion 23
         targetSdkVersion 29
         versionCode 43
-        versionName "3.1.13"
+        versionName "3.2.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -36,8 +36,8 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.6'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.6'
 
 
     implementation 'androidx.appcompat:appcompat:1.2.0'
@@ -52,7 +52,11 @@ dependencies {
 
     testImplementation 'junit:junit:4.12'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
+//    implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
+
+    // play core, for in-app review
+    implementation 'com.google.android.play:core:1.9.1'
+    implementation 'com.google.android.play:core-ktx:1.8.1'
 }
 repositories {
     mavenCentral()

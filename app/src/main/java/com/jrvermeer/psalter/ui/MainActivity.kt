@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         Logger.init(this)
         storage = StorageHelper(this)
         downloader = DownloadHelper(this, storage)
-        rateHelper = RateHelper(this, storage) { msg -> snack(msg) }
+        rateHelper = RateHelper(this, storage)
         tutorials = TutorialHelper(this)
         instant = InstantHelper(this)
         psalterDb = PsalterDb(this, this, downloader)
@@ -68,7 +68,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         storage.launchCount++
         // instant.transferInstantAppData() doesn't work anyways
 
-        if(!instant.isInstantApp) tutorials.showOfflineTutorial(toolbar as Toolbar)
         tutorials.showScoreTutorial(fabToggleScore)
         tutorials.showShuffleTutorial(fab)
     }
@@ -135,6 +134,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
             val next = psalterDb.getRandom()
             viewPager.setCurrentItem(next.id, true)
         }
+        rateHelper.showRateDialogIfAppropriate()
     }
 
     private fun toggleNightMode() {
@@ -207,12 +207,14 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     }
 
     private fun togglePlay() {
-        if (mediaService?.isPlaying == true) mediaService?.stop()
+        if (mediaService?.isPlaying == true) {
+            mediaService?.stop()
+            rateHelper.showRateDialogIfAppropriate()
+        }
         else {
             val psalter = selectedPsalter
             mediaService?.play(psalter!!, false)
             mediaService?.startService(this)
-            rateHelper.showRateDialogIfAppropriate()
         }
     }
 
@@ -222,6 +224,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
 
         mediaService?.play(selectedPsalter!!, true)
         mediaService?.startService(this)
+        rateHelper.showRateDialogIfAppropriate()
         return true
     }
 
@@ -235,6 +238,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
 
             collapseSearchView()
             goToPsalter(num)
+            rateHelper.showRateDialogIfAppropriate()
         }
         catch (ex: Exception) {
             Logger.e("Error in MainActivity.onItemClick", ex)
@@ -244,8 +248,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     private fun onPageSelected(index: Int, view: View?) {
         Logger.d("Page selected: $index")
         storage.pageIndex = index
-        storage.pageSelectionCount++
-        if(storage.pageSelectionCount > 5 && view != null) tutorials.showGoToPsalmTutorial(view.tvPagerPsalm)
         if (mediaService?.isPlaying == true && mediaService?.currentMediaId != index) { // if we're playing audio of a different #, stop it
             mediaService?.stop()
         }

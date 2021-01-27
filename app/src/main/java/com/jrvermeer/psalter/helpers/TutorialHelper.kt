@@ -61,13 +61,6 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
                 false)
     }
 
-    fun showGoToPsalmTutorial(view: View) {
-        showTutorial(view,
-                R.string.pref_tutorialshown_gotopsalm,
-                R.string.tutorial_gotopsalm_title,
-                R.string.tutorial_gotopsalm_description)
-    }
-
     fun showScoreTutorial(view: View) {
         showTutorial(view,
                 R.string.pref_tutorialshown_showscore,
