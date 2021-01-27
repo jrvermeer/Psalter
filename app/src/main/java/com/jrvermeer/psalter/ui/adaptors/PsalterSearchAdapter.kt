@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import com.jrvermeer.psalter.models.Psalter
 import com.jrvermeer.psalter.R
 import com.jrvermeer.psalter.allIndexesOf
+import com.jrvermeer.psalter.helpers.StorageHelper
 import com.jrvermeer.psalter.infrastructure.PsalterDb
 
 import java.util.ArrayList
@@ -28,7 +29,9 @@ import kotlinx.android.synthetic.main.search_results_layout.view.*
  */
 
 //uses data from PsalterDb class to fill search "screen" with items
-class PsalterSearchAdapter(private val appContext: Context, private val psalterDb: PsalterDb) : ArrayAdapter<Psalter>(appContext, R.layout.search_results_layout) {
+class PsalterSearchAdapter(private val appContext: Context,
+                           private val psalterDb: PsalterDb,
+                           private val storage: StorageHelper) : ArrayAdapter<Psalter>(appContext, R.layout.search_results_layout) {
     private lateinit var query: String
     private val inflater: LayoutInflater = LayoutInflater.from(appContext)
     private var psalmSearch: Boolean = false
@@ -57,8 +60,11 @@ class PsalterSearchAdapter(private val appContext: Context, private val psalterD
                 convertView = inflater.inflate(R.layout.search_results_layout, parent, false)
                 holder = ViewHolder(convertView)
                 convertView!!.tag = holder
-            } else
-                holder = convertView.tag as ViewHolder
+            }
+            else holder = convertView.tag as ViewHolder
+
+            holder.tvLyrics.textSize = 16 * storage.textScale
+            holder.tvNumber.textSize = 20 * storage.textScale
 
             val psalter = getItem(position)
             holder.tvNumber!!.text = psalter!!.number.toString()

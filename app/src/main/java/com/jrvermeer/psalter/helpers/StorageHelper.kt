@@ -41,6 +41,10 @@ class StorageHelper(private val context: Context) {
         get() = getBoolean(R.string.pref_enableOffline)
         set(b) = setBoolean(R.string.pref_enableOffline, b)
 
+    var textScale
+        get() = getFloat(R.string.pref_textScale, 1f)
+        set(i) = setFloat(R.string.pref_textScale, i)
+
     fun getBoolean(@StringRes id: Int): Boolean {
         return sPref.getBoolean(context.getString(id), false)
     }
@@ -48,11 +52,18 @@ class StorageHelper(private val context: Context) {
         sPref.edit().putBoolean(context.getString(id), b).apply()
     }
 
-    fun getInt(@StringRes id: Int): Int {
-        return sPref.getInt(context.getString(id), 0)
+    fun getInt(@StringRes id: Int, default: Int = 0): Int {
+        return sPref.getInt(context.getString(id), default)
     }
     fun setInt(@StringRes id: Int, i: Int) {
         sPref.edit().putInt(context.getString(id), i).apply()
+    }
+
+    fun getFloat(@StringRes id: Int, default: Float = 0f): Float {
+        return sPref.getFloat(context.getString(id), default)
+    }
+    fun setFloat(@StringRes id: Int, i: Float) {
+        sPref.edit().putFloat(context.getString(id), i).apply()
     }
 
     fun getLong(@StringRes id: Int): Long {

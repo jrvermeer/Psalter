@@ -12,6 +12,7 @@ import com.jrvermeer.psalter.infrastructure.Logger
 import com.jrvermeer.psalter.infrastructure.PsalterDb
 import com.jrvermeer.psalter.*
 import com.jrvermeer.psalter.helpers.DownloadHelper
+import com.jrvermeer.psalter.helpers.StorageHelper
 import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -25,8 +26,7 @@ class PsalterPagerAdapter(private val context: Context,
                           private val scope: CoroutineScope,
                           private val psalterDb: PsalterDb,
                           private val downloader: DownloadHelper,
-                          private var showScore: Boolean,
-                          private val nightMode: Boolean) : androidx.viewpager.widget.PagerAdapter() {
+                          private val storage: StorageHelper) : androidx.viewpager.widget.PagerAdapter() {
 
     private val views = ConcurrentHashMap<Int, View>()
 
@@ -41,11 +41,7 @@ class PsalterPagerAdapter(private val context: Context,
             val inflater = LayoutInflater.from(context)
             val layout = inflater.inflate(R.layout.psalter_layout, collection, false) as ViewGroup
 
-            scope.launch { setScoreAndLyrics(psalter, layout) }
-
-            layout.tvPagerHeading.text = psalter.heading
-            layout.tvPagerPsalm.text = HtmlCompat.fromHtml(psalter.bibleLink, HtmlCompat.FROM_HTML_MODE_LEGACY)
-            layout.tvPagerPsalm.movementMethod = LinkMovementMethod.getInstance()
+            scope.launch { setLayoutData(psalter, layout) }
 
             views[position] = layout
             collection.addView(layout)
@@ -77,16 +73,22 @@ class PsalterPagerAdapter(private val context: Context,
         return view === `object`
     }
 
-    private suspend fun setScoreAndLyrics(psalter: Psalter, layout: View) {
+    private suspend fun setLayoutData(psalter: Psalter, layout: View) {
+        layout.tvPagerHeading.textSize = 18 * storage.textScale
+        layout.tvPagerHeading.text = psalter.heading
+        layout.tvPagerLyrics.textSize = 16 * storage.textScale
+        layout.tvPagerPsalm.textSize = 18 * storage.textScale
+        layout.tvPagerPsalm.text = HtmlCompat.fromHtml(psalter.bibleLink, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        layout.tvPagerPsalm.movementMethod = LinkMovementMethod.getInstance()
         // load audio in bg. viewpager never needs audio, but user could request it at tap of a button
         scope.launch { psalter.loadAudio(downloader) }
         var text = psalter.lyrics
-        if (showScore) {
+        if (storage.scoreShown) {
             layout.scoreProgress.show()
             val score = psalter.loadScore(downloader)
             layout.scoreProgress.hide()
             if (score != null) {
-                if (nightMode) score.invertColors()
+                if (storage.nightMode) score.invertColors()
                 layout.imgScore.setImageDrawable(score)
 
                 val lyricStartIndex = psalter.lyrics.indexOf((psalter.numVersesInsideStaff + 1).toString() + ". ")
@@ -101,10 +103,9 @@ class PsalterPagerAdapter(private val context: Context,
         layout.tvPagerLyrics.text = text
     }
 
-    fun toggleScore()  {
-        showScore = !showScore
+    fun updateViews() {
         for((i, view) in views) {
-            scope.launch { setScoreAndLyrics(psalterDb.getIndex(i)!!, view) }
+            scope.launch { setLayoutData(psalterDb.getIndex(i)!!, view) }
         }
     }
 

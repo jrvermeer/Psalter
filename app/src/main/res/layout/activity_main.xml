@@ -37,6 +37,7 @@
             android:descendantFocusability="beforeDescendants">
 
             <androidx.viewpager.widget.PagerTitleStrip
+                android:id="@+id/viewPagerTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/PagerTitleStrip" />

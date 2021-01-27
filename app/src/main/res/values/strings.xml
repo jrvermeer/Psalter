@@ -18,6 +18,7 @@
     <string name="pref_ratePromptCount">key_ratePromptCount</string>
     <string name="pref_lastRatePromptShownTime">key_lastRateDialogShownTime</string>
     <string name="pref_neverShowRatePromptAgain">key_neverShowRatePromptAgain</string>
+    <string name="pref_textScale">key_textScale</string>
 
 
     <string name="pref_tutorialshown_fabreminder">pref_tutorialshown_fabreminder</string>

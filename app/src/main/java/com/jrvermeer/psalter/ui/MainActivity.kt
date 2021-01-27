@@ -19,6 +19,7 @@ import androidx.viewpager.widget.ViewPager
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import android.text.InputType
+import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -27,7 +28,6 @@ import androidx.appcompat.widget.AppCompatButton
 import com.google.android.material.snackbar.Snackbar
 import com.jrvermeer.psalter.*
 import com.jrvermeer.psalter.helpers.*
-import kotlinx.android.synthetic.main.psalter_layout.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import androidx.lifecycle.LifecycleOwner
@@ -116,9 +116,20 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
             R.id.action_shuffle -> shuffle(true)
             R.id.action_sendFeedback -> startActivity(IntentHelper.FeedbackIntent)
             R.id.action_downloadAll -> queueDownloads()
+            R.id.action_fontSize_small -> setFontScale(.875f)
+            R.id.action_fontSize_normal -> setFontScale(1f)
+            R.id.action_fontSize_big -> setFontScale(1.125f)
+            R.id.action_fontSize_huge -> setFontScale(1.25f)
             else -> return false
         }
         return true
+    }
+
+    private fun setFontScale(scale: Float) {
+        val adapter = viewPager.adapter as PsalterPagerAdapter
+        storage.textScale = scale
+        adapter.updateViews()
+        updateViewPagerTitleTextSize()
     }
 
     private fun queueDownloads(){
@@ -201,7 +212,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     private fun toggleScore() {
         val adapter = viewPager.adapter as PsalterPagerAdapter
         storage.scoreShown = !storage.scoreShown
-        adapter.toggleScore()
+        adapter.updateViews()
         fabToggleScore.isSelected = storage.scoreShown
         Logger.changeScore(storage.scoreShown)
     }
@@ -323,9 +334,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         searchBtn_Lyrics.setOnClickListener { searchMode = SearchMode.Lyrics }
         searchBtn_Psalter.setOnClickListener { searchMode = SearchMode.Psalter }
 
-        val viewPagerAdapter = PsalterPagerAdapter(this, this, psalterDb, downloader, storage.scoreShown, storage.nightMode)
+        val viewPagerAdapter = PsalterPagerAdapter(this, this, psalterDb, downloader, storage)
         viewPager.adapter = viewPagerAdapter
         viewPager.currentItem = storage.pageIndex
+        updateViewPagerTitleTextSize()
         viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrollStateChanged(state: Int) {}
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
@@ -334,8 +346,11 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
             }
         })
 
-        lvSearchResults.adapter = PsalterSearchAdapter(this, psalterDb)
+        lvSearchResults.adapter = PsalterSearchAdapter(this, psalterDb, storage)
         lvSearchResults.setOnItemClickListener { _, view, _, _ -> onItemClick(view) }
+    }
+    private fun updateViewPagerTitleTextSize(){
+        viewPagerTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18 * storage.textScale)
     }
     private fun initSearchView(menu: Menu){
         searchMenuItem = menu.findItem(R.id.action_search)
