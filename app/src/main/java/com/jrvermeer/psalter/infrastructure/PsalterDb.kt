@@ -35,7 +35,7 @@ class PsalterDb(private val context: Context,
     }
 
     companion object {
-        private const val DATABASE_VERSION = 29
+        private const val DATABASE_VERSION = 30
         private const val DATABASE_NAME = "psalter.sqlite"
         private const val TABLE_NAME = "psalter"
     }
