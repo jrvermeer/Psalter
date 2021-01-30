@@ -30,8 +30,13 @@
         android:title="@string/action_sendFeedback"
         app:showAsAction="never"/>
 
-    <item android:id="@+id/action_fontSize"
+    <item android:id="@+id/action_favorites"
         android:orderInCategory="18"
+        android:title="Favorites"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/action_fontSize"
+        android:orderInCategory="19"
         android:title="Text size"
         app:showAsAction="never"
         app:actionViewClass="android.widget.Spinner">

@@ -81,6 +81,18 @@
         app:fabSize="mini"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabToggleFavorite"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="69.2548dp"
+        android:layout_marginBottom="69.2548dp"
+        android:theme="@style/SecondaryFab"
+        android:src="@drawable/baseline_star_rate_white_24"
+        android:tint="@color/button"
+        app:fabSize="mini"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

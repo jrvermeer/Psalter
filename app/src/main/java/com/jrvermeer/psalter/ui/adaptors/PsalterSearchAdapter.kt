@@ -32,19 +32,22 @@ import kotlinx.android.synthetic.main.search_results_layout.view.*
 class PsalterSearchAdapter(private val appContext: Context,
                            private val psalterDb: PsalterDb,
                            private val storage: StorageHelper) : ArrayAdapter<Psalter>(appContext, R.layout.search_results_layout) {
-    private lateinit var query: String
+    private var query: String? = null
     private val inflater: LayoutInflater = LayoutInflater.from(appContext)
-    private var psalmSearch: Boolean = false
 
     fun queryPsalter(searchQuery: String) {
         query = getFilteredQuery(searchQuery.toLowerCase())
-        showResults(psalterDb.searchPsalter(query))
-        psalmSearch = false
+        showResults(psalterDb.searchPsalter(query!!))
     }
 
     fun getAllFromPsalm(psalm: Int) {
+        query = null
         showResults(psalterDb.getPsalm(psalm))
-        psalmSearch = true
+    }
+
+    fun showFavorites() {
+        query = null
+        showResults(psalterDb.getFavorites())
     }
 
     private fun showResults(results: Array<Psalter>) {
@@ -68,7 +71,8 @@ class PsalterSearchAdapter(private val appContext: Context,
 
             val psalter = getItem(position)
             holder.tvNumber!!.text = psalter!!.number.toString()
-            if (psalmSearch) {
+            holder.tvId!!.text = psalter!!.id.toString()
+            if (query == null) {
                 holder.tvLyrics!!.text = psalter.lyrics.substring(0, getVerseEndIndex(psalter.lyrics, 0))
             } else { //lyric search
                 val filterLyrics = psalter.lyrics.toLowerCase()
@@ -77,7 +81,7 @@ class PsalterSearchAdapter(private val appContext: Context,
                 val viewText = SpannableStringBuilder()
                 val verseHitIndices = ArrayList<Int>() // could be verse number, could be chorus, so build a list of indexes
                 var first = true
-                for (i in filterLyrics.allIndexesOf(query)) {
+                for (i in filterLyrics.allIndexesOf(query!!)) {
                     val iStart = getVerseStartIndex(filterLyrics, i)
 
                     if (!verseHitIndices.contains(iStart)) { // if 1st occurrence of query in this verse, add verse to display
@@ -90,13 +94,13 @@ class PsalterSearchAdapter(private val appContext: Context,
                 }
                 // highlight all instances of query
                 val filterText = viewText.toString().toLowerCase()
-                var iHighlightStart = filterText.indexOf(query)
+                var iHighlightStart = filterText.indexOf(query!!)
                 while (iHighlightStart >= 0) {
-                    val iHighlightEnd = iHighlightStart + query.length
+                    val iHighlightEnd = iHighlightStart + query!!.length
                     viewText.setSpan(StyleSpan(Typeface.BOLD), iHighlightStart, iHighlightEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
 //                    viewText.setSpan(AbsoluteSizeSpan((holder.tvLyrics!!.textSize * 1.5).toInt()), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     viewText.setSpan(ForegroundColorSpan(ContextCompat.getColor(context, R.color.colorAccent)), iHighlightStart, iHighlightEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    iHighlightStart = filterText.indexOf(query, iHighlightStart + 1)
+                    iHighlightStart = filterText.indexOf(query!!, iHighlightStart + 1)
                 }
 
                 holder.tvLyrics!!.text = viewText
@@ -134,6 +138,7 @@ class PsalterSearchAdapter(private val appContext: Context,
     }
 
     class ViewHolder(view: View) {
+        var tvId: TextView = view.tvSearchId
         var tvNumber: TextView = view.tvSearchNumber
         var tvLyrics: TextView = view.tvSearchLyrics
     }

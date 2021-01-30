@@ -20,7 +20,8 @@ data class Psalter (
         var numVersesInsideStaff: Int = 0,
         var heading: String = "",
         var audioPath: String = "",
-        var scorePath: String = ""
+        var scorePath: String = "",
+        var isFavorite: Boolean = false
 ) {
     private val passage get() = if (psalm == 0) "Matthew+6:9-13" else "Psalm+$psalm"
     val biblePassage get() = if (psalm == 0) "Lords Prayer" else "Psalm $psalm"

@@ -14,7 +14,8 @@
                 android:id="@+id/tvPagerHeading"
                 android:gravity="center_horizontal"
                 android:textSize="18sp"
-                android:textStyle="italic" />
+                android:textStyle="italic"
+                android:textIsSelectable="true"  />
 
             <TextView
                 android:layout_width="match_parent"

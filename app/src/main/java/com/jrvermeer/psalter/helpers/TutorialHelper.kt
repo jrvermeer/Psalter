@@ -24,7 +24,7 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
                 .considerOuterCircleCanceled(true)
     }
 
-    private fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int?, tint: Boolean = true) {
+    private fun showTutorial(view: View?, @StringRes prefTutorialShown: Int, @StringRes title: Int, @StringRes description: Int?, tint: Boolean = false) {
         val shown = storage.getBoolean(prefTutorialShown)
         if (!shown && view != null) {
             if (targetSequence == null) targetSequence = getTargetSequence()
@@ -51,21 +51,37 @@ class TutorialHelper(private val context: Activity) : TapTargetSequence.Listener
         showTutorial(fab,
                 R.string.pref_tutorialshown_fablongpress,
                 R.string.tutorial_fab_title,
-                R.string.tutorial_fab_description, false)
+                R.string.tutorial_fab_description)
     }
 
     fun showShuffleReminderTutorial(fab: View) {
         showTutorial(fab, R.string.pref_tutorialshown_fabreminder,
                 R.string.tutorial_fabreminder_title,
-                R.string.tutorial_fabreminder_description,
-                false)
+                R.string.tutorial_fabreminder_description)
     }
 
     fun showScoreTutorial(view: View) {
         showTutorial(view,
                 R.string.pref_tutorialshown_showscore,
                 R.string.tutorial_showscore_title,
-                null,false)
+                null)
+    }
+
+    fun showAddToFavoritesTutorial(view: View){
+        // should show regardless of whether or not it was shown before
+        storage.setBoolean(R.string.pref_tutorialShown_favorites, false)
+        showTutorial(view,
+            R.string.pref_tutorialShown_favorites,
+            R.string.tutorial_addToFavorites_title,
+            R.string.tutorial_addToFavorites_description)
+    }
+
+    fun showViewFavoritesTutorial(toolbar: Toolbar){
+        showTutorial(toolbar,
+            R.string.pref_tutorialShown_favorites,
+            R.string.tutorial_viewFavorites_title,
+            R.string.tutorial_viewFavorites_description,
+            true)
     }
 
     override fun onSequenceFinish() {

@@ -23,11 +23,17 @@
 
     <string name="pref_tutorialshown_fabreminder">pref_tutorialshown_fabreminder</string>
     <string name="tutorial_fabreminder_title">You may have forgotten…</string>
-    <string name="tutorial_fabreminder_description">You can start shuffling by pressing and holding the play button. It really is more convenient.</string>
+    <string name="tutorial_fabreminder_description">You can start shuffling by holding down the play button. It really is more convenient.</string>
 
     <string name="pref_tutorialshown_fablongpress">pref_tutorialshown_fablongpress</string>
     <string name="tutorial_fab_title">Press this button to play song</string>
     <string name="tutorial_fab_description">Press and hold to continue playing random numbers. Makes great background music!</string>
+
+    <string name="pref_tutorialShown_favorites">pref_tutorialshown_favorites</string>
+    <string name="tutorial_viewFavorites_title">View Favorites</string>
+    <string name="tutorial_viewFavorites_description">Find all your favorite psalters in the menu</string>
+    <string name="tutorial_addToFavorites_title">Add to favorites</string>
+    <string name="tutorial_addToFavorites_description">Use this button to keep track of your favorite numbers</string>
 
     <string name="pref_tutorialshown_showscore">pref_tutorialshown_showscore_2</string>
     <string name="tutorial_showscore_title"> Press this button to toggle score images on or off</string>

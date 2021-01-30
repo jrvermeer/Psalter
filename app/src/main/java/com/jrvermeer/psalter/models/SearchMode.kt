@@ -7,5 +7,6 @@ package com.jrvermeer.psalter.models
 enum class SearchMode {
     Psalter,
     Psalm,
-    Lyrics
+    Lyrics,
+    Favorites
 }

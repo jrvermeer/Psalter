@@ -12,6 +12,7 @@ enum class LogEvent {
     SearchPsalter,
     SearchPsalm,
     SearchLyrics,
+    SearchFavorites,
     SkipToNext,
     RateFlow,
     EnableOffline

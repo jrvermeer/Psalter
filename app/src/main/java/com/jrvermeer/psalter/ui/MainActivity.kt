@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     private lateinit var searchView: SearchView
     private lateinit var downloader: DownloadHelper
     private var mediaService: MediaServiceBinder? = null
+    private var menu: Menu? = null
 
     private val selectedPsalter get() = psalterDb.getIndex(viewPager.currentItem)
 
@@ -96,6 +97,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        this.menu = menu
         menuInflater.inflate(R.menu.menu_options, menu)
         menu.findItem(R.id.action_nightMode).isChecked = storage.nightMode
         initSearchView(menu)
@@ -116,6 +118,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
             R.id.action_shuffle -> shuffle(true)
             R.id.action_sendFeedback -> startActivity(IntentHelper.FeedbackIntent)
             R.id.action_downloadAll -> queueDownloads()
+            R.id.action_favorites -> showFavorites()
             R.id.action_fontSize_small -> setFontScale(.875f)
             R.id.action_fontSize_normal -> setFontScale(1f)
             R.id.action_fontSize_big -> setFontScale(1.125f)
@@ -178,35 +181,65 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         else snack("Pick a number between 1 and 150")
     }
 
+    private fun showFavorites(): Boolean {
+        if(!psalterDb.getFavorites().any()) {
+            tutorials.showAddToFavoritesTutorial(fabToggleFavorite)
+            return false
+        }
+
+        searchMode = SearchMode.Favorites
+        menu?.hideAll()
+        showSearchResultsScreen()
+
+        (lvSearchResults.adapter as PsalterSearchAdapter).showFavorites()
+        lvSearchResults.setSelectionAfterHeaderView()
+        return true
+    }
+
+
     private fun showSearchButtons() {
         tableButtons.show()
-        fabToggleScore.hide()
-        fab.hide()
+        hideFabs()
     }
     private fun hideSearchButtons() {
         tableButtons.hide()
+        showFabs()
+    }
+
+    private fun showFabs(){
         fabToggleScore.show()
+        fabToggleFavorite.show()
         fab.show()
+    }
+    private fun  hideFabs(){
+        fabToggleScore.hide()
+        fabToggleFavorite.hide()
+        fab.hide()
     }
 
     private fun showSearchResultsScreen() {
         lvSearchResults.show()
         viewPager.hide()
-        fab.hide()
+        hideFabs()
     }
     private fun hideSearchResultsScreen() {
         lvSearchResults.hide()
         viewPager.show()
-        fab.show()
+        showFabs()
     }
 
     private fun collapseSearchView() {
         if (searchMenuItem.isActionViewExpanded) searchMenuItem.collapseActionView()
+        hideSearchResultsScreen()
+        invalidateOptionsMenu() // rebuild menu
     }
 
+    private fun goToId(id: Int){
+        viewPager.setCurrentItem(id, true) //viewpager goes by index
+    }
     private fun goToPsalter(psalterNumber: Int) {
         val psalter = psalterDb.getPsalter(psalterNumber)!!
-        viewPager.setCurrentItem(psalter.id, true) //viewpager goes by index
+        goToId(psalter.id)
     }
 
     private fun toggleScore() {
@@ -215,6 +248,12 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         adapter.updateViews()
         fabToggleScore.isSelected = storage.scoreShown
         Logger.changeScore(storage.scoreShown)
+    }
+
+    private fun toggleFavorite() {
+        psalterDb.toggleFavorite(selectedPsalter!!)
+        fabToggleFavorite.isSelected = !fabToggleFavorite.isSelected
+        tutorials.showViewFavoritesTutorial(toolbar as Toolbar)
     }
 
     private fun togglePlay() {
@@ -242,13 +281,15 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     private fun onItemClick(view: View) {
         try {
             val tvNumber = (view.tag as PsalterSearchAdapter.ViewHolder).tvNumber
+            val tvId = (view.tag as PsalterSearchAdapter.ViewHolder).tvId
             val num = Integer.parseInt(tvNumber!!.text.toString())
+            val id = Integer.parseInt(tvId!!.text.toString())
 
             //log event before collapsing searchview, so we can log the query text
             Logger.searchEvent(searchMode, searchView.query.toString(), num)
 
             collapseSearchView()
-            goToPsalter(num)
+            goToId(id)
             rateHelper.showRateDialogIfAppropriate()
         }
         catch (ex: Exception) {
@@ -259,6 +300,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
     private fun onPageSelected(index: Int, view: View?) {
         Logger.d("Page selected: $index")
         storage.pageIndex = index
+        fabToggleFavorite.isSelected = selectedPsalter?.isFavorite ?: false
         if (mediaService?.isPlaying == true && mediaService?.currentMediaId != index) { // if we're playing audio of a different #, stop it
             mediaService?.stop()
         }
@@ -327,8 +369,11 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         fab.setOnClickListener { togglePlay() }
         fab.setOnLongClickListener { shuffle() }
 
-        fabToggleScore.isSelected = storage.scoreShown
         fabToggleScore.setOnClickListener { toggleScore() }
+        fabToggleScore.isSelected = storage.scoreShown
+
+        fabToggleFavorite.setOnClickListener { toggleFavorite() }
+        fabToggleFavorite.isSelected = psalterDb.getIndex(storage.pageIndex)?.isFavorite ?: false
 
         searchBtn_Psalm.setOnClickListener { searchMode = SearchMode.Psalm }
         searchBtn_Lyrics.setOnClickListener { searchMode = SearchMode.Lyrics }
@@ -378,14 +423,13 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         searchMenuItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                 showSearchButtons()
-                menu.hideExcept(searchMenuItem)
+                menu.hideAll(searchMenuItem)
                 return true
             }
 
             override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                hideSearchResultsScreen()
                 hideSearchButtons()
-                invalidateOptionsMenu() // rebuild menu
+                invalidateOptionsMenu()
                 return true
             }
         })
@@ -404,10 +448,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope(), Lifecyc
         deselect.forEach { btn -> btn.isSelected = false }
     }
 
-    private fun Menu.hideExcept(exception: MenuItem) {
+    private fun Menu.hideAll(except: MenuItem? = null) {
         for (i in 0 until this.size()) {
             val item = this.getItem(i)
-            if (item != exception) item.isVisible = false
+            if (item != except) item.isVisible = false
         }
     }
 }

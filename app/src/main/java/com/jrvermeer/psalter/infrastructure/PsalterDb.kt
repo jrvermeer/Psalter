@@ -29,13 +29,13 @@ class PsalterDb(private val context: Context,
     private var nextRandom : Psalter? = null
 
     init {
-        setForcedUpgrade(DATABASE_VERSION)
-        db = readableDatabase // must be AFTER setForcedUpgrade()
+        setForcedUpgrade(31) // v31 introduces user data; versions above that must use upgrade scripts to preserve it //https://github.com/jgilfelt/android-sqlite-asset-helper#database-upgrades
+        db = writableDatabase // must be AFTER setForcedUpgrade()
         scope.launch { loadNextRandom() }
     }
 
     companion object {
-        private const val DATABASE_VERSION = 30
+        private const val DATABASE_VERSION = 31
         private const val DATABASE_NAME = "psalter.sqlite"
         private const val TABLE_NAME = "psalter"
     }
@@ -62,6 +62,12 @@ class PsalterDb(private val context: Context,
         return if (results.isEmpty()) null else results[0]
     }
 
+    fun toggleFavorite(p: Psalter) {
+        p.isFavorite = !p.isFavorite
+        val newVal = if(p.isFavorite) 1 else 0
+        db.execSQL("update psalter set isFavorite = ? where _id = ?", arrayOf(newVal, p.id.toString()))
+    }
+
     private fun CoroutineScope.loadNextRandom() {
         nextRandom = queryRandom()
         launch { nextRandom!!.loadAudio(downloader) }
@@ -80,6 +86,10 @@ class PsalterDb(private val context: Context,
 
     fun getPsalm(psalmNumber: Int): Array<Psalter> {
         return queryPsalter("psalm = $psalmNumber", null, null)
+    }
+
+    fun getFavorites(): Array<Psalter> {
+        return queryPsalter("isFavorite = 1", null, null)
     }
 
     fun searchPsalter(searchText: String): Array<Psalter> {
@@ -111,7 +121,7 @@ class PsalterDb(private val context: Context,
         val hits = ArrayList<Psalter>()
         try {
             val qb = SQLiteQueryBuilder()
-            val columns = arrayOf("_id", "number", "psalm", "title", "lyrics", "numverses", "heading", "audioFileName", "scoreFileName", "NumVersesInsideStaff")
+            val columns = arrayOf("_id", "number", "psalm", "title", "lyrics", "numverses", "heading", "audioFileName", "scoreFileName", "NumVersesInsideStaff", "isFavorite")
             qb.tables = TABLE_NAME
             c = qb.query(db, columns, where, parms, null, null, null, limit)
             while (c.moveToNext()) {
@@ -127,6 +137,7 @@ class PsalterDb(private val context: Context,
                 p.audioPath = c.getString(7)
                 p.scorePath = c.getString(8)
                 p.numVersesInsideStaff = c.getInt(9)
+                p.isFavorite = c.getInt(10) == 1
                 hits.add(p)
             }
         } catch (ex: Exception) {
