@@ -85,12 +85,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginEnd="69.2548dp"
-        android:layout_marginBottom="69.2548dp"
+        android:layout_marginEnd="69.2548339959dp"
+        android:layout_marginBottom="69.2548339959dp"
         android:theme="@style/SecondaryFab"
         android:src="@drawable/baseline_star_rate_white_24"
         android:tint="@color/button"
         app:fabSize="mini"/>
+
+    <!-- a = angle from top of screen, straight down to middle of big fab, over to middle of favorites fab -->
+    <!-- marginEnd = 64sin(a) + 24 -->
+    <!-- marginBottom = 64sin(90 - a) + 24 -->
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
